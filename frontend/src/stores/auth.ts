@@ -69,15 +69,16 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const response: LoginResponse = await authApi.login(credentials)
+      const response = await authApi.login(credentials)
+      const loginData = response.data
 
       // 设置用户信息
-      user.value = response.user
-      permissions.value = response.permissions || []
-      roles.value = response.roles || []
+      user.value = loginData.user
+      permissions.value = loginData.permissions || []
+      roles.value = loginData.roles || []
 
       // 设置token
-      setTokens(response.token, response.refreshToken)
+      setTokens(loginData.token, loginData.refreshToken)
 
       // 记录登录时间
       if (user.value) {
@@ -122,7 +123,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const response = await authApi.refreshToken(refreshToken.value)
-      setTokens(response.token, response.refreshToken)
+      const tokenData = response.data
+      setTokens(tokenData.token, tokenData.refreshToken)
       return true
     } catch (err) {
       console.error('Token refresh failed:', err)
@@ -136,10 +138,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return
 
     try {
-      const userProfile = await authApi.getUserProfile()
-      user.value = userProfile.user
-      permissions.value = userProfile.permissions || []
-      roles.value = userProfile.roles || []
+      const response = await authApi.getUserProfile()
+      user.value = response.data
     } catch (err: any) {
       console.error('Failed to fetch user profile:', err)
       if (err.status === 401) {
@@ -158,8 +158,8 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
 
     try {
-      const updatedUser = await authApi.updateProfile(profileData)
-      user.value = { ...user.value, ...updatedUser }
+      const response = await authApi.updateProfile(profileData)
+      user.value = response.data
     } catch (err: any) {
       error.value = err.message || '更新用户信息失败'
       throw err

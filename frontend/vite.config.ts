@@ -14,7 +14,10 @@ export default defineConfig({
         'vue-router',
         'pinia',
         '@vueuse/core',
-        '@vueuse/head'
+        '@vueuse/head',
+        {
+          '@/lib/utils': ['cn']
+        }
       ],
       dts: true,
       dirs: [

@@ -12,6 +12,7 @@ const HomePage = () => import('@/views/Home.vue')
 const SearchPage = () => import('@/views/search/SearchPage.vue')
 const SearchResultsPage = () => import('@/views/search/SearchResultsPage.vue')
 const LoginPage = () => import('@/views/auth/LoginPage.vue')
+const ComponentTestPage = () => import('@/views/ComponentTest.vue')
 
 // 管理后台页面
 const AdminDashboard = () => import('@/views/admin/Dashboard.vue')
@@ -63,6 +64,15 @@ const routes: RouteRecordRaw[] = [
           sort: route.query.sort,
           page: Number(route.query.page) || 1
         })
+      },
+      {
+        path: '/component-test',
+        name: 'ComponentTest',
+        component: ComponentTestPage,
+        meta: {
+          title: 'UI组件测试',
+          description: 'UI组件和主题测试页面'
+        }
       }
     ]
   },
@@ -192,7 +202,7 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(to, _from, savedPosition) {
     if (savedPosition) {
       return savedPosition
     } else if (to.hash) {
@@ -207,7 +217,7 @@ const router = createRouter({
 })
 
 // 全局前置守卫
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
 
   // 设置页面标题
@@ -253,7 +263,7 @@ router.beforeEach(async (to, from, next) => {
 })
 
 // 全局后置钩子
-router.afterEach((to, from) => {
+router.afterEach((to, _from) => {
   // 页面加载完成后的处理
   if (typeof window !== 'undefined') {
     // 发送页面浏览统计

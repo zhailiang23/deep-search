@@ -8,7 +8,8 @@ import type {
   SearchSuggestion,
   SearchFilters,
   SearchOptions,
-  SearchAnalytics
+  SearchAnalytics,
+  FilterOption
 } from '@/types/search'
 
 export const useSearchStore = defineStore('search', () => {
@@ -17,7 +18,7 @@ export const useSearchStore = defineStore('search', () => {
   const results: Ref<SearchResult[]> = ref([])
   const suggestions: Ref<SearchSuggestion[]> = ref([])
   const filters: Ref<SearchFilters> = ref({})
-  const availableFilters: Ref<any[]> = ref([])
+  const availableFilters: Ref<FilterOption[]> = ref([])
 
   // 加载状态
   const loading = ref(false)
@@ -132,15 +133,17 @@ export const useSearchStore = defineStore('search', () => {
 
       const response = await searchApi.search(searchParams)
 
+      const searchData = response.data
+
       if (options.loadMore) {
-        results.value.push(...response.results)
+        results.value.push(...searchData.results)
       } else {
-        results.value = response.results
+        results.value = searchData.results
       }
 
-      totalCount.value = response.totalCount
-      totalPages.value = response.totalPages
-      availableFilters.value = response.availableFilters || []
+      totalCount.value = searchData.totalCount
+      totalPages.value = searchData.totalPages
+      availableFilters.value = searchData.availableFilters || []
 
       // 添加到搜索历史
       addToHistory(query.value)
@@ -150,7 +153,7 @@ export const useSearchStore = defineStore('search', () => {
       lastSearchTimestamp.value = Date.now()
 
       // 发送搜索分析数据
-      trackSearch(query.value, response.totalCount)
+      trackSearch(query.value, searchData.totalCount)
 
     } catch (err: any) {
       error.value = err.message || '搜索请求失败'
@@ -182,8 +185,8 @@ export const useSearchStore = defineStore('search', () => {
 
     try {
       const response = await searchApi.getSuggestions(searchQuery.trim())
-      suggestions.value = response.suggestions
-      return response.suggestions
+      suggestions.value = response.data.suggestions
+      return response.data.suggestions
     } catch (err: any) {
       console.error('Failed to get suggestions:', err)
       return []
@@ -223,21 +226,15 @@ export const useSearchStore = defineStore('search', () => {
   // 搜索分析跟踪
   const trackSearch = async (searchQuery: string, resultCount: number) => {
     try {
-      await searchApi.trackSearch({
-        query: searchQuery,
-        resultCount,
-        timestamp: Date.now(),
-        filters: filters.value,
-        sortBy: sortBy.value
-      })
+      await searchApi.trackSearch(searchQuery, resultCount)
     } catch (error) {
       console.warn('Failed to track search:', error)
     }
   }
 
-  const trackClick = async (analytics: SearchAnalytics) => {
+  const trackClick = async (resultId: string, searchQuery: string) => {
     try {
-      await searchApi.trackClick(analytics)
+      await searchApi.trackClick(resultId, searchQuery)
     } catch (error) {
       console.warn('Failed to track click:', error)
     }
