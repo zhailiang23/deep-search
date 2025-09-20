@@ -399,15 +399,15 @@ public class SemanticSearchService {
             .mapToDouble(Float::doubleValue)
             .map(x -> x * x)
             .sum();
-        magnitude = Math.sqrt(magnitude);
+        final double finalMagnitude = Math.sqrt(magnitude);
 
-        if (magnitude == 0) {
+        if (finalMagnitude == 0) {
             return vector;
         }
 
         // 标准化
         return vector.stream()
-            .map(x -> (float) (x / magnitude))
+            .map(x -> (float) (x / finalMagnitude))
             .collect(Collectors.toList());
     }
 
@@ -552,7 +552,7 @@ public class SemanticSearchService {
         }
 
         long daysSinceCreation = java.time.temporal.ChronoUnit.DAYS.between(
-            document.getCreatedAt().toInstant(),
+            document.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toInstant(),
             java.time.Instant.now()
         );
 

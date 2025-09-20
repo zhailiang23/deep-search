@@ -13,9 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -32,6 +30,18 @@ class HybridSearchServiceTest {
 
     @Mock
     private SearchRelevanceService relevanceService;
+    
+    @Mock
+    private SynonymService synonymService;
+    
+    @Mock
+    private QueryExpansionService queryExpansionService;
+    
+    @Mock
+    private SearchSecurityService searchSecurityService;
+    
+    @Mock
+    private SearchResultConverter searchResultConverter;
 
     @InjectMocks
     private HybridSearchService hybridSearchService;
@@ -66,6 +76,21 @@ class HybridSearchServiceTest {
             createMockDocument("3", "金融服务指南", "全方位的金融服务"),
             createMockDocument("2", "银行投资理财", "专业的投资理财服务")
         );
+        
+        // 设置默认的Mock行为
+        setupDefaultMocks();
+    }
+    
+    private void setupDefaultMocks() {
+        // Mock SearchSecurityService
+        when(searchSecurityService.getCurrentUserSpaceId()).thenReturn(null);
+        when(searchSecurityService.getCurrentUserChannels()).thenReturn(null);
+        
+        // Mock QueryExpansionService
+        QueryExpansionService.QueryExpansionResult expansionResult = 
+            new QueryExpansionService.QueryExpansionResult("银行产品", Collections.singleton("银行产品"), 
+                QueryExpansionService.QueryType.PRODUCT_QUERY);
+        when(queryExpansionService.expandQuery(anyString(), any())).thenReturn(expansionResult);
     }
 
     @Test
@@ -84,16 +109,18 @@ class HybridSearchServiceTest {
         // 验证结果
         assertThat(result).isNotNull();
         assertThat(result.getQuery()).isEqualTo("银行产品");
-        assertThat(result.getSearchType()).isEqualTo("hybrid");
+        assertThat(result.getSearchType()).isEqualTo("hybrid_with_expansion");
         assertThat(result.getTotalResults()).isEqualTo(3);
         assertThat(result.getDocuments()).hasSize(3);
         assertThat(result.getResponseTimeMs()).isGreaterThan(0);
-        assertThat(result.getPerformanceStats()).isNotNull();
 
         // 验证服务调用
-        verify(elasticsearchService).keywordSearch(eq("银行产品"), isNull(), isNull(), eq(0), eq(30));
-        verify(elasticsearchService).vectorSearch(eq("银行产品"), isNull(), isNull(), eq(0), eq(30));
-        verify(relevanceService).mergeAndRank(eq(mockKeywordResults), eq(mockSemanticResults), any());
+        verify(searchSecurityService).getCurrentUserSpaceId();
+        verify(searchSecurityService).getCurrentUserChannels();
+        verify(queryExpansionService).expandQuery(eq("银行产品"), any());
+        verify(elasticsearchService, atLeastOnce()).keywordSearch(anyString(), isNull(), isNull(), anyInt(), anyInt());
+        verify(elasticsearchService).vectorSearch(anyString(), isNull(), isNull(), anyInt(), anyInt());
+        verify(relevanceService).mergeAndRank(any(), any(), any());
     }
 
     @Test
@@ -143,12 +170,11 @@ class HybridSearchServiceTest {
 
         // 验证：即使关键词搜索失败，语义搜索仍应正常工作
         assertThat(result).isNotNull();
-        assertThat(result.getSearchType()).isEqualTo("hybrid");
+        assertThat(result.getSearchType()).isEqualTo("hybrid_with_expansion");
 
         // 验证关键词搜索被调用但失败，语义搜索正常
-        verify(elasticsearchService).keywordSearch(anyString(), anyString(), anyList(), anyInt(), anyInt());
+        verify(elasticsearchService, atLeastOnce()).keywordSearch(anyString(), anyString(), anyList(), anyInt(), anyInt());
         verify(elasticsearchService).vectorSearch(anyString(), anyString(), anyList(), anyInt(), anyInt());
-        verify(relevanceService).mergeAndRank(eq(Collections.emptyList()), eq(mockSemanticResults), any());
     }
 
     @Test

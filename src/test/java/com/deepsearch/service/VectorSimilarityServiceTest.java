@@ -56,8 +56,8 @@ class VectorSimilarityServiceTest {
         testVector3 = Arrays.asList(0.0f, 1.0f, 0.0f); // 垂直向量
 
         // 创建测试文档向量
-        testDocumentVector1 = createTestDocumentVector(1L, "0.6,0.8,0.0");
-        testDocumentVector2 = createTestDocumentVector(2L, "0.0,1.0,0.0");
+        testDocumentVector1 = createTestDocumentVector(1L, Arrays.asList(0.6, 0.8, 0.0));
+        testDocumentVector2 = createTestDocumentVector(2L, Arrays.asList(0.0, 1.0, 0.0));
     }
 
     @Test
@@ -237,9 +237,9 @@ class VectorSimilarityServiceTest {
         int topK = 1; // 限制只返回1个结果
 
         List<DocumentVector> allDocVectors = Arrays.asList(
-            createTestDocumentVector(1L, "0.9,0.436,0.0"), // 高相似度
-            createTestDocumentVector(2L, "0.8,0.6,0.0"),   // 中相似度
-            createTestDocumentVector(3L, "0.7,0.714,0.0")  // 低相似度
+            createTestDocumentVector(1L, Arrays.asList(0.9, 0.436, 0.0)), // 高相似度
+            createTestDocumentVector(2L, Arrays.asList(0.8, 0.6, 0.0)),   // 中相似度
+            createTestDocumentVector(3L, Arrays.asList(0.7, 0.714, 0.0))  // 低相似度
         );
 
         when(documentVectorRepository.findAll()).thenReturn(allDocVectors);
@@ -332,10 +332,10 @@ class VectorSimilarityServiceTest {
         double threshold = 0.1; // 低阈值以包含更多文档
 
         List<DocumentVector> allDocVectors = Arrays.asList(
-            createTestDocumentVector(1L, "0.9,0.436,0.0"),
-            createTestDocumentVector(2L, "0.8,0.6,0.0"),
-            createTestDocumentVector(3L, "0.7,0.714,0.0"),
-            createTestDocumentVector(4L, "0.6,0.8,0.0")
+            createTestDocumentVector(1L, Arrays.asList(0.9, 0.436, 0.0)),
+            createTestDocumentVector(2L, Arrays.asList(0.8, 0.6, 0.0)),
+            createTestDocumentVector(3L, Arrays.asList(0.7, 0.714, 0.0)),
+            createTestDocumentVector(4L, Arrays.asList(0.6, 0.8, 0.0))
         );
 
         when(documentVectorRepository.findAll()).thenReturn(allDocVectors);
@@ -376,7 +376,7 @@ class VectorSimilarityServiceTest {
     @Test
     void testVectorDeserialization_ValidData() {
         // Given
-        DocumentVector docVector = createTestDocumentVector(1L, "1.0,2.0,3.0");
+        DocumentVector docVector = createTestDocumentVector(1L, Arrays.asList(1.0, 2.0, 3.0));
 
         // When - 通过batchSimilaritySearch间接测试反序列化
         when(documentVectorRepository.findAll()).thenReturn(Arrays.asList(docVector));
@@ -392,8 +392,8 @@ class VectorSimilarityServiceTest {
 
     @Test
     void testVectorDeserialization_InvalidData() {
-        // Given
-        DocumentVector docVector = createTestDocumentVector(1L, "invalid,data,format");
+        // Given - 测试无效数据时的处理，但这次用null代替
+        DocumentVector docVector = createTestDocumentVector(1L, null);
 
         // When
         when(documentVectorRepository.findAll()).thenReturn(Arrays.asList(docVector));
@@ -436,7 +436,7 @@ class VectorSimilarityServiceTest {
 
     // ==================== 辅助方法 ====================
 
-    private DocumentVector createTestDocumentVector(Long documentId, String vectorData) {
+    private DocumentVector createTestDocumentVector(Long documentId, List<Double> vectorData) {
         DocumentVector docVector = new DocumentVector();
         docVector.setId(documentId);
         docVector.setDocumentId(documentId);

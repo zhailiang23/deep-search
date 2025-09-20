@@ -1,7 +1,7 @@
 package com.deepsearch.service;
 
-import com.deepsearch.elasticsearch.dto.DocumentIndex;
 import com.deepsearch.elasticsearch.dto.SearchRequest;
+import com.deepsearch.elasticsearch.dto.DocumentIndex;
 import com.deepsearch.elasticsearch.dto.SearchResult;
 import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
 import lombok.RequiredArgsConstructor;
@@ -9,12 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,6 +28,8 @@ public class HybridSearchService {
     private final SearchRelevanceService relevanceService;
     private final SynonymService synonymService;
     private final QueryExpansionService queryExpansionService;
+    private final SearchSecurityService searchSecurityService;
+    private final SearchResultConverter searchResultConverter;
 
     // 用于并行搜索的线程池
     private final ExecutorService searchExecutor = Executors.newFixedThreadPool(4);
@@ -57,37 +54,45 @@ public class HybridSearchService {
                 searchRequest.getKeywordWeight(),
                 searchRequest.getVectorWeight());
 
-            // 1. 查询扩展处理
+            // 1. 获取用户权限信息
+            String spaceId = searchSecurityService.getCurrentUserSpaceId();
+            List<String> channels = searchSecurityService.getCurrentUserChannels();
+            
+            // 更新搜索请求中的权限信息
+            searchRequest.setSpaceId(spaceId);
+            searchRequest.setChannels(channels);
+
+            // 2. 查询扩展处理
             QueryExpansionService.QueryExpansionResult expansionResult = 
                 queryExpansionService.expandQuery(originalQuery, buildContextHints(searchRequest));
             
             Set<String> expandedQueries = expansionResult.getAllTerms();
             log.debug("查询扩展完成: '{}' -> {} 个扩展查询", originalQuery, expandedQueries.size());
 
-            // 2. 并行执行关键词和语义搜索
+            // 3. 并行执行关键词和语义搜索
             CompletableFuture<List<DocumentIndex>> keywordResults =
                 CompletableFuture.supplyAsync(() -> performKeywordSearch(searchRequest, expandedQueries), searchExecutor);
 
             CompletableFuture<List<DocumentIndex>> semanticResults =
                 CompletableFuture.supplyAsync(() -> performSemanticSearch(searchRequest, expandedQueries), searchExecutor);
 
-            // 3. 等待两个搜索完成并获取结果
+            // 4. 等待两个搜索完成并获取结果
             List<DocumentIndex> keywordDocs = keywordResults.join();
             List<DocumentIndex> semanticDocs = semanticResults.join();
 
             log.info("并行搜索完成: 关键词结果={}, 语义结果={}", keywordDocs.size(), semanticDocs.size());
 
-            // 4. 合并和重排序结果
+            // 5. 合并和重排序结果
             SearchWeights weights = buildSearchWeights(searchRequest);
             List<DocumentIndex> mergedResults = relevanceService.mergeAndRank(
                 keywordDocs, semanticDocs, weights);
 
-            // 5. 应用分页
+            // 6. 应用分页
             List<DocumentIndex> pagedResults = applyPagination(mergedResults, searchRequest);
 
             long responseTime = System.currentTimeMillis() - startTime;
 
-            // 6. 构建SearchResult响应
+            // 7. 构建SearchResult响应
             SearchResult result = new SearchResult(
                 originalQuery,
                 pagedResults,
@@ -201,7 +206,6 @@ public class HybridSearchService {
         }
         
         // 可以添加更多上下文信息，如用户历史、当前页面等
-        
         return contextHints;
     }
 
@@ -222,7 +226,7 @@ public class HybridSearchService {
     }
 
     /**
-     * 去重和排序
+     * 去重和排序 - 统一的结果处理逻辑
      */
     private List<DocumentIndex> deduplicateAndSort(List<DocumentIndex> results) {
         // 使用文档ID去重，保留评分最高的
@@ -241,46 +245,6 @@ public class HybridSearchService {
             .stream()
             .sorted((a, b) -> Float.compare(b.getScore(), a.getScore()))
             .collect(Collectors.toList());
-    }
-
-    /**
-     * 执行关键词搜索
-     */
-    private List<DocumentIndex> performKeywordSearch(SearchRequest searchRequest) {
-        try {
-            log.debug("执行关键词搜索: {}", searchRequest.getQuery());
-
-            return elasticsearchService.keywordSearch(
-                searchRequest.getQuery(),
-                searchRequest.getSpaceId(),
-                searchRequest.getChannels(),
-                0, // 获取更多结果用于合并
-                Math.max(100, searchRequest.getSize() * 3)
-            );
-        } catch (IOException e) {
-            log.warn("关键词搜索失败: {}", e.getMessage());
-            return Collections.emptyList();
-        }
-    }
-
-    /**
-     * 执行语义搜索
-     */
-    private List<DocumentIndex> performSemanticSearch(SearchRequest searchRequest) {
-        try {
-            log.debug("执行语义搜索: {}", searchRequest.getQuery());
-
-            return elasticsearchService.vectorSearch(
-                searchRequest.getQuery(),
-                searchRequest.getSpaceId(),
-                searchRequest.getChannels(),
-                0, // 获取更多结果用于合并
-                Math.max(100, searchRequest.getSize() * 3)
-            );
-        } catch (IOException e) {
-            log.warn("语义搜索失败: {}", e.getMessage());
-            return Collections.emptyList();
-        }
     }
 
     /**

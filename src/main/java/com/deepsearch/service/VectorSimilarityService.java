@@ -137,7 +137,7 @@ public class VectorSimilarityService {
             List<SimilarityResult> results = allDocVectors.parallelStream()
                 .map(docVector -> {
                     try {
-                        List<Float> docVectorData = deserializeVector(docVector.getVectorData());
+                        List<Float> docVectorData = convertDoubleListToFloatList(docVector.getVectorData());
                         double similarity = calculateSimilarity(queryVector, docVectorData, algorithm);
 
                         if (similarity >= threshold) {
@@ -234,10 +234,10 @@ public class VectorSimilarityService {
 
         for (Long documentId : documentIds) {
             try {
-                Optional<DocumentVector> docVectorOpt = documentVectorRepository.findByDocumentId(documentId);
-                if (docVectorOpt.isPresent()) {
-                    DocumentVector docVector = docVectorOpt.get();
-                    List<Float> docVectorData = deserializeVector(docVector.getVectorData());
+                List<DocumentVector> docVectors = documentVectorRepository.findByDocumentId(documentId);
+                if (!docVectors.isEmpty()) {
+                    DocumentVector docVector = docVectors.get(0); // 取第一个向量
+                    List<Float> docVectorData = convertDoubleListToFloatList(docVector.getVectorData());
 
                     double similarity = calculateSimilarity(queryVector, docVectorData, algorithm);
 
@@ -405,6 +405,19 @@ public class VectorSimilarityService {
         }
 
         return clusters;
+    }
+
+    /**
+     * 将List<Double>转换为List<Float>
+     */
+    private List<Float> convertDoubleListToFloatList(List<Double> doubleList) {
+        if (doubleList == null || doubleList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        return doubleList.stream()
+            .map(Double::floatValue)
+            .collect(Collectors.toList());
     }
 
     // ==================== 内部类和枚举 ====================

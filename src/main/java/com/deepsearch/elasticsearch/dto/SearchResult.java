@@ -168,6 +168,13 @@ public class SearchResult {
     }
 
     /**
+     * 设置总结果数（别名方法，兼容性）
+     */
+    public void setTotalHits(int totalHits) {
+        this.totalResults = totalHits;
+    }
+
+    /**
      * 获取响应时间（别名方法，兼容性）
      */
     public long getResponseTime() {
@@ -378,6 +385,13 @@ public class SearchResult {
 
         @Schema(description = "预期结果数量", example = "42")
         private Integer expectedResults;
+
+        // 添加三参数构造函数
+        public SearchSuggestion(String text, String type, float confidence) {
+            this.text = text;
+            this.type = type;
+            this.confidence = confidence;
+        }
     }
 
     /**

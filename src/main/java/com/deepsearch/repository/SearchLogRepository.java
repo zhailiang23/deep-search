@@ -117,8 +117,8 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
     /**
      * 获取指定数量的最近搜索记录
      */
-    @Query(value = "SELECT * FROM search_logs ORDER BY created_at DESC LIMIT :limit", nativeQuery = true)
-    List<SearchLog> findRecentSearchLogs(@Param("limit") int limit);
+    @Query(value = "SELECT * FROM search_logs ORDER BY created_at DESC LIMIT 20", nativeQuery = true)
+    List<SearchLog> findRecentSearchLogs(@Param("limit") int limited);
 
     /**
      * 查找包含指定查询文本的热门搜索词

@@ -1,31 +1,24 @@
 package com.deepsearch.service;
 
-import com.deepsearch.elasticsearch.dto.SearchRequest;
-import com.deepsearch.elasticsearch.dto.SearchResult;
 import com.deepsearch.dto.DocumentResponseDto;
+import com.deepsearch.elasticsearch.dto.SearchRequest;
 import com.deepsearch.entity.Document;
 import com.deepsearch.entity.SearchLog;
-import com.deepsearch.entity.User;
+import com.deepsearch.elasticsearch.dto.DocumentIndex;
+import com.deepsearch.elasticsearch.dto.SearchResult;
+import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
 import com.deepsearch.exception.BadRequestException;
-import com.deepsearch.exception.ResourceNotFoundException;
 import com.deepsearch.repository.DocumentRepository;
 import com.deepsearch.repository.SearchLogRepository;
-import com.deepsearch.repository.UserRepository;
-import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
-import com.deepsearch.elasticsearch.dto.DocumentIndex;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,8 +33,9 @@ public class SearchService {
 
     private final DocumentRepository documentRepository;
     private final SearchLogRepository searchLogRepository;
-    private final UserRepository userRepository;
     private final ElasticsearchSearchService elasticsearchSearchService;
+    private final SearchSecurityService searchSecurityService;
+    private final SearchResultConverter searchResultConverter;
 
     /**
      * 执行搜索 - 统一搜索入口
@@ -89,7 +83,7 @@ public class SearchService {
             // 构建SearchResult响应
             SearchResult searchResult = new SearchResult(
                 searchRequest.getQuery(),
-                convertToDocumentIndex(pagedResults),
+                searchResultConverter.convertToDocumentIndex(pagedResults),
                 totalResults,
                 from / size,
                 size,
@@ -123,30 +117,12 @@ public class SearchService {
     }
 
     /**
-     * 将DocumentResponseDto转换为DocumentIndex（用于SearchResult）
-     */
-    private List<DocumentIndex> convertToDocumentIndex(List<DocumentResponseDto> documents) {
-        return documents.stream().map(doc -> {
-            DocumentIndex docIndex = new DocumentIndex();
-            docIndex.setId(doc.getId().toString());
-            docIndex.setTitle(doc.getTitle());
-            docIndex.setContent(doc.getContent());
-            docIndex.setSummary(doc.getSummary());
-            docIndex.setCategory(doc.getCategory());
-            docIndex.setSource("database"); // 标记数据来源
-            docIndex.setCreatedAt(doc.getCreatedAt());
-            docIndex.setUpdatedAt(doc.getUpdatedAt());
-            return docIndex;
-        }).collect(Collectors.toList());
-    }
-
-    /**
      * 关键词搜索 - 委托给Elasticsearch
      */
     private List<DocumentResponseDto> performKeywordSearch(SearchRequest searchRequest) {
         try {
-            String spaceId = getCurrentUserSpaceId();
-            List<String> channels = getCurrentUserChannels();
+            String spaceId = searchSecurityService.getCurrentUserSpaceId();
+            List<String> channels = searchSecurityService.getCurrentUserChannels();
             
             List<DocumentIndex> elasticsearchResults = elasticsearchSearchService.keywordSearch(
                 searchRequest.getQueryText(),
@@ -156,7 +132,7 @@ public class SearchService {
                 1000  // 获取更多结果用于业务层处理
             );
 
-            return convertElasticsearchResults(elasticsearchResults);
+            return searchResultConverter.convertElasticsearchResults(elasticsearchResults);
         } catch (IOException e) {
             log.warn("Elasticsearch关键词搜索失败，降级到数据库搜索: {}", e.getMessage());
             return performFallbackKeywordSearch(searchRequest);
@@ -168,8 +144,8 @@ public class SearchService {
      */
     private List<DocumentResponseDto> performSemanticSearch(SearchRequest searchRequest) {
         try {
-            String spaceId = getCurrentUserSpaceId();
-            List<String> channels = getCurrentUserChannels();
+            String spaceId = searchSecurityService.getCurrentUserSpaceId();
+            List<String> channels = searchSecurityService.getCurrentUserChannels();
             
             List<DocumentIndex> elasticsearchResults = elasticsearchSearchService.vectorSearch(
                 searchRequest.getQueryText(),
@@ -179,7 +155,7 @@ public class SearchService {
                 1000
             );
 
-            return convertElasticsearchResults(elasticsearchResults);
+            return searchResultConverter.convertElasticsearchResults(elasticsearchResults);
         } catch (IOException e) {
             log.warn("Elasticsearch语义搜索失败，降级到关键词搜索: {}", e.getMessage());
             return performFallbackKeywordSearch(searchRequest);
@@ -191,8 +167,8 @@ public class SearchService {
      */
     private List<DocumentResponseDto> performHybridSearch(SearchRequest searchRequest) {
         try {
-            String spaceId = getCurrentUserSpaceId();
-            List<String> channels = getCurrentUserChannels();
+            String spaceId = searchSecurityService.getCurrentUserSpaceId();
+            List<String> channels = searchSecurityService.getCurrentUserChannels();
             
             List<DocumentIndex> elasticsearchResults = elasticsearchSearchService.hybridSearch(
                 searchRequest.getQueryText(),
@@ -204,7 +180,7 @@ public class SearchService {
                 2.0f   // 向量权重
             );
 
-            return convertElasticsearchResults(elasticsearchResults);
+            return searchResultConverter.convertElasticsearchResults(elasticsearchResults);
         } catch (IOException e) {
             log.warn("Elasticsearch混合搜索失败，降级到关键词搜索: {}", e.getMessage());
             return performFallbackKeywordSearch(searchRequest);
@@ -230,52 +206,11 @@ public class SearchService {
     }
 
     /**
-     * 转换Elasticsearch结果为业务DTO
-     */
-    private List<DocumentResponseDto> convertElasticsearchResults(List<DocumentIndex> elasticsearchResults) {
-        List<DocumentResponseDto> results = new ArrayList<>();
-        
-        for (DocumentIndex docIndex : elasticsearchResults) {
-            // 根据Elasticsearch文档ID查找数据库中的完整文档信息
-            try {
-                Long documentId = Long.parseLong(docIndex.getId());
-                Document document = documentRepository.findById(documentId).orElse(null);
-                
-                if (document != null && document.getStatus() == Document.Status.INDEXED) {
-                    results.add(new DocumentResponseDto(document));
-                }
-            } catch (NumberFormatException e) {
-                log.warn("无效的文档ID格式: {}", docIndex.getId());
-            }
-        }
-        
-        return results;
-    }
-
-    /**
-     * 获取当前用户的空间ID（权限控制）
-     */
-    private String getCurrentUserSpaceId() {
-        // TODO: 实现基于用户权限的空间ID获取
-        // 暂时返回null表示不限制空间
-        return null;
-    }
-
-    /**
-     * 获取当前用户可访问的渠道列表（权限控制）
-     */
-    private List<String> getCurrentUserChannels() {
-        // TODO: 实现基于用户权限的渠道列表获取
-        // 暂时返回null表示不限制渠道
-        return null;
-    }
-
-    /**
      * 记录搜索日志
      */
     private void recordSearchLog(SearchRequest searchRequest, int resultCount, int responseTime, String searchType) {
         try {
-            Long userId = getCurrentUserIdOrNull();
+            Long userId = searchSecurityService.getCurrentUserIdOrNull();
 
             SearchLog searchLog = new SearchLog();
             searchLog.setQueryText(searchRequest.getQuery());
@@ -313,11 +248,8 @@ public class SearchService {
      */
     @Transactional(readOnly = true)
     public List<SearchLog> getUserSearchHistory(Long userId, int limit) {
-        // 检查权限：只有用户本人或管理员可以查看搜索历史
-        Long currentUserId = getCurrentUserIdOrNull();
-        if (!isAdmin() && (currentUserId == null || !currentUserId.equals(userId))) {
-            throw new BadRequestException("无权访问其他用户的搜索历史");
-        }
+        // 使用统一的权限验证服务
+        searchSecurityService.validateUserAccess(userId, "查看搜索历史");
 
         Pageable pageable = PageRequest.of(0, limit);
         return searchLogRepository.findRecentSearchLogsByUserId(userId, pageable);
@@ -328,7 +260,7 @@ public class SearchService {
      */
     @Transactional(readOnly = true)
     public List<SearchLog> getCurrentUserSearchHistory(int limit) {
-        Long currentUserId = getCurrentUserId();
+        Long currentUserId = searchSecurityService.getCurrentUserId();
         return getUserSearchHistory(currentUserId, limit);
     }
 
@@ -337,9 +269,7 @@ public class SearchService {
      */
     @Transactional(readOnly = true)
     public SearchStatistics getSearchStatistics(LocalDateTime startDate, LocalDateTime endDate) {
-        if (!isAdmin()) {
-            throw new BadRequestException("无权访问搜索统计信息");
-        }
+        searchSecurityService.validateAdminAccess("查看搜索统计");
 
         long totalSearches = searchLogRepository.countByCreatedAtBetween(startDate, endDate);
 
@@ -374,9 +304,7 @@ public class SearchService {
      */
     @Transactional(readOnly = true)
     public List<PopularSearchTerm> getPopularSearchTerms(int limit) {
-        if (!isAdmin()) {
-            throw new BadRequestException("无权访问热门搜索词统计");
-        }
+        searchSecurityService.validateAdminAccess("查看热门搜索词统计");
 
         Pageable pageable = PageRequest.of(0, limit);
         List<Object[]> results = searchLogRepository.findPopularSearchTerms(pageable);
@@ -390,54 +318,12 @@ public class SearchService {
      * 删除搜索历史
      */
     public void deleteUserSearchHistory(Long userId) {
-        // 检查权限：只有用户本人或管理员可以删除搜索历史
-        Long currentUserId = getCurrentUserIdOrNull();
-        if (!isAdmin() && (currentUserId == null || !currentUserId.equals(userId))) {
-            throw new BadRequestException("无权删除其他用户的搜索历史");
-        }
+        // 使用统一的权限验证服务
+        searchSecurityService.validateUserAccess(userId, "删除搜索历史");
 
         List<SearchLog> userSearchLogs = searchLogRepository.findByUserId(userId);
         searchLogRepository.deleteAll(userSearchLogs);
         log.info("用户搜索历史删除成功: userId={}", userId);
-    }
-
-    /**
-     * 获取当前用户ID
-     */
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new BadRequestException("用户未认证");
-        }
-
-        String username = authentication.getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "用户名", username));
-
-        return user.getId();
-    }
-
-    /**
-     * 获取当前用户ID（允许为null）
-     */
-    private Long getCurrentUserIdOrNull() {
-        try {
-            return getCurrentUserId();
-        } catch (Exception e) {
-            return null; // 允许匿名搜索
-        }
-    }
-
-    /**
-     * 检查当前用户是否为管理员
-     */
-    private boolean isAdmin() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            return false;
-        }
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
     }
 
     /**

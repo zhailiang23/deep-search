@@ -85,7 +85,7 @@ class UserBehaviorServiceTest {
         assertNotNull(profile);
         assertEquals(userId, profile.getUserId());
         assertEquals("SEMANTIC_ORIENTED", profile.getPreferenceType());
-        assertEquals(0.8, profile.getPersonalizationStrength());
+        assertEquals(Double.valueOf(0.8), profile.getPersonalizationStrength());
         assertEquals(3, profile.getRecentSearches().size());
         assertTrue(profile.hasPreferenceForCategory("产品"));
         assertFalse(profile.hasPreferenceForCategory("其他"));

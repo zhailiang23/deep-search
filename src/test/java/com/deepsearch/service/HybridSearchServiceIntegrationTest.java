@@ -49,7 +49,7 @@ class HybridSearchServiceIntegrationTest {
         // 设置测试搜索请求
         testSearchRequest = new SearchRequest();
         testSearchRequest.setQuery("房贷利率");
-        testSearchRequest.setSpaceId(1L);
+        testSearchRequest.setSpaceId("1");
         testSearchRequest.setChannels(Arrays.asList("web", "mobile"));
         testSearchRequest.setFrom(0);
         testSearchRequest.setSize(10);
@@ -82,14 +82,14 @@ class HybridSearchServiceIntegrationTest {
         when(queryExpansionService.expandQuery(eq("房贷利率"), any())).thenReturn(expansionResult);
 
         // 模拟对每个扩展查询的搜索结果
-        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Arrays.asList(mockKeywordResults.get(0)));
-        when(elasticsearchSearchService.keywordSearch(eq("住房贷款利率"), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(eq("住房贷款利率"), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Arrays.asList(mockKeywordResults.get(1)));
-        when(elasticsearchSearchService.keywordSearch(eq("按揭贷款利率"), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(eq("按揭贷款利率"), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Collections.emptyList());
 
-        when(elasticsearchSearchService.vectorSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.vectorSearch(anyString(), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(mockSemanticResults);
 
         List<DocumentIndex> mergedResults = new ArrayList<>();
@@ -113,8 +113,8 @@ class HybridSearchServiceIntegrationTest {
         verify(queryExpansionService).expandQuery(eq("房贷利率"), any());
 
         // 验证每个扩展查询都被搜索
-        verify(elasticsearchSearchService, times(3)).keywordSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt());
-        verify(elasticsearchSearchService).vectorSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt());
+        verify(elasticsearchSearchService, times(3)).keywordSearch(anyString(), anyString(), anyList(), anyInt(), anyInt());
+        verify(elasticsearchSearchService).vectorSearch(anyString(), anyString(), anyList(), anyInt(), anyInt());
 
         // 验证结果合并
         verify(relevanceService).mergeAndRank(anyList(), anyList(), any());
@@ -126,7 +126,7 @@ class HybridSearchServiceIntegrationTest {
         when(queryExpansionService.expandQuery(eq("房贷利率"), any()))
             .thenThrow(new RuntimeException("查询扩展失败"));
 
-        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(mockKeywordResults);
 
         // When
@@ -138,7 +138,7 @@ class HybridSearchServiceIntegrationTest {
         assertThat(result.getQuery()).isEqualTo("房贷利率");
 
         // 验证降级到关键词搜索
-        verify(elasticsearchSearchService).keywordSearch(eq("房贷利率"), anyLong(), anyList(), anyInt(), anyInt());
+        verify(elasticsearchSearchService).keywordSearch(eq("房贷利率"), anyString(), anyList(), anyInt(), anyInt());
     }
 
     @Test
@@ -153,9 +153,9 @@ class HybridSearchServiceIntegrationTest {
 
         when(queryExpansionService.expandQuery(eq("房贷利率"), any())).thenReturn(expansionResult);
 
-        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(mockKeywordResults);
-        when(elasticsearchSearchService.vectorSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.vectorSearch(anyString(), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(mockSemanticResults);
 
         when(relevanceService.mergeAndRank(anyList(), anyList(), any())).thenReturn(mockKeywordResults);
@@ -169,7 +169,7 @@ class HybridSearchServiceIntegrationTest {
         assertThat(result.getExpandedQueries()).contains("房贷利率"); // 至少包含原始查询
 
         // 验证原始查询被搜索
-        verify(elasticsearchSearchService).keywordSearch(eq("房贷利率"), anyLong(), anyList(), anyInt(), anyInt());
+        verify(elasticsearchSearchService).keywordSearch(eq("房贷利率"), anyString(), anyList(), anyInt(), anyInt());
     }
 
     @Test
@@ -190,9 +190,9 @@ class HybridSearchServiceIntegrationTest {
 
         when(queryExpansionService.expandQuery(eq("房贷利率"), any())).thenReturn(expansionResult);
 
-        when(elasticsearchSearchService.keywordSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(anyString(), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Collections.emptyList());
-        when(elasticsearchSearchService.vectorSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.vectorSearch(anyString(), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(mockSemanticResults);
 
         when(relevanceService.mergeAndRank(anyList(), anyList(), any())).thenReturn(mockSemanticResults);
@@ -204,7 +204,7 @@ class HybridSearchServiceIntegrationTest {
         assertThat(result).isNotNull();
 
         // 验证不会对所有扩展查询都进行搜索（应该有限制）
-        verify(elasticsearchSearchService, atMost(21)).keywordSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt());
+        verify(elasticsearchSearchService, atMost(21)).keywordSearch(anyString(), anyString(), anyList(), anyInt(), anyInt());
     }
 
     @Test
@@ -223,12 +223,12 @@ class HybridSearchServiceIntegrationTest {
         when(queryExpansionService.expandQuery(eq("房贷利率"), any())).thenReturn(expansionResult);
 
         // 两个查询返回相同的文档
-        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Arrays.asList(duplicateDoc));
-        when(elasticsearchSearchService.keywordSearch(eq("住房贷款利率"), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(eq("住房贷款利率"), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Arrays.asList(duplicateDoc)); // 相同ID的文档
 
-        when(elasticsearchSearchService.vectorSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.vectorSearch(anyString(), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Collections.emptyList());
 
         when(relevanceService.mergeAndRank(anyList(), anyList(), any())).thenReturn(Arrays.asList(duplicateDoc));
@@ -258,12 +258,12 @@ class HybridSearchServiceIntegrationTest {
 
         when(queryExpansionService.expandQuery(eq("房贷利率"), any())).thenReturn(expansionResult);
 
-        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(eq("房贷利率"), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Arrays.asList(originalDoc));
-        when(elasticsearchSearchService.keywordSearch(eq("住房贷款利率"), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(eq("住房贷款利率"), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Arrays.asList(expandedDoc));
 
-        when(elasticsearchSearchService.vectorSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.vectorSearch(anyString(), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(Collections.emptyList());
 
         when(relevanceService.mergeAndRank(anyList(), anyList(), any()))
@@ -281,7 +281,7 @@ class HybridSearchServiceIntegrationTest {
     @Test
     void testHybridSearch_WithContextHints_ShouldPassContextToExpansion() throws IOException {
         // Given
-        testSearchRequest.setSpaceId(123L);
+        testSearchRequest.setSpaceId("123");
         testSearchRequest.setChannels(Arrays.asList("mobile", "web", "atm"));
 
         Set<String> expandedQueries = Set.of("房贷利率");
@@ -294,13 +294,13 @@ class HybridSearchServiceIntegrationTest {
 
         when(queryExpansionService.expandQuery(eq("房贷利率"), argThat(contextHints -> {
             return contextHints.containsKey("spaceId") &&
-                   contextHints.get("spaceId").equals(123L) &&
+                   contextHints.get("spaceId").equals("123") &&
                    contextHints.containsKey("channels");
         }))).thenReturn(expansionResult);
 
-        when(elasticsearchSearchService.keywordSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.keywordSearch(anyString(), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(mockKeywordResults);
-        when(elasticsearchSearchService.vectorSearch(anyString(), anyLong(), anyList(), anyInt(), anyInt()))
+        when(elasticsearchSearchService.vectorSearch(anyString(), anyString(), anyList(), anyInt(), anyInt()))
             .thenReturn(mockSemanticResults);
         when(relevanceService.mergeAndRank(anyList(), anyList(), any())).thenReturn(mockKeywordResults);
 

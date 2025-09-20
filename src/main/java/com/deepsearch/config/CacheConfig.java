@@ -19,6 +19,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -49,13 +50,13 @@ public class CacheConfig {
                 }));
 
         // 设置缓存名称
-        cacheManager.setCacheNames(
+        cacheManager.setCacheNames(Arrays.asList(
                 "autoCompleteSuggestions",
                 "popularQueries",
                 "userPreferences",
                 "searchSuggestions",
                 "trieStats"
-        );
+        ));
 
         return cacheManager;
     }

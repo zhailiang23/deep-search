@@ -30,6 +30,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -95,10 +97,10 @@ class DocumentServiceTest {
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn(username);
 
-        List<GrantedAuthority> authorities = Arrays.stream(roles)
+        Collection<? extends GrantedAuthority> authorities = Arrays.stream(roles)
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .toList();
-        when(authentication.getAuthorities()).thenReturn((List) authorities);
+                .collect(Collectors.toList());
+        when(authentication.getAuthorities()).thenReturn(authorities);
 
         SecurityContextHolder.setContext(securityContext);
     }

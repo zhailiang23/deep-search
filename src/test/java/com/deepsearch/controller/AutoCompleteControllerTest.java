@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -153,11 +154,11 @@ class AutoCompleteControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpected(jsonPath("$.data.originalQuery").value("银行"))
+                .andExpect(jsonPath("$.data.originalQuery").value("银行"))
                 .andExpect(jsonPath("$.data.totalSuggestions").value(4))
                 .andExpect(jsonPath("$.data.responseTimeMs").exists())
-                .andExpected(jsonPath("$.data.expansionSuggestions").isArray())
-                .andExpected(jsonPath("$.data.relatedQueries").isArray());
+                .andExpect(jsonPath("$.data.expansionSuggestions").isArray())
+                .andExpect(jsonPath("$.data.relatedQueries").isArray());
     }
 
     @Test
@@ -308,7 +309,7 @@ class AutoCompleteControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").exists())
                 .andExpect(jsonPath("$.data").exists())
-                .andExpected(jsonPath("$.message").exists());
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
