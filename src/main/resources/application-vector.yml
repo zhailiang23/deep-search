@@ -1,0 +1,46 @@
+vector-processing:
+  default-mode: AUTO_SWITCH
+
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    base-url: https://api.openai.com/v1
+    models:
+      small: text-embedding-3-small
+      large: text-embedding-3-large
+    rate-limit: 1000  # requests per minute
+    timeout-seconds: 30
+    max-retries: 3
+
+  local-models:
+    bert:
+      model-path: ./models/sentence-transformer
+      max-sequence-length: 512
+      batch-size: 32
+      device: cpu  # cpu or cuda
+
+  cache:
+    enabled: true
+    ttl-hours: 24
+    max-size: 10000
+
+  mode-switching:
+    auto-switch-enabled: true
+    cost-threshold-cents: 1000  # 每小时成本阈值
+    latency-threshold-ms: 3000  # 延迟阈值
+    queue-size-threshold: 100   # 队列长度阈值
+    load-threshold-percent: 80  # CPU负载阈值
+
+  task-queue:
+    batch-size: 50
+    max-concurrent-tasks: 10
+    retry-delay-seconds: 60
+    max-queue-size: 1000
+
+  processing:
+    default-dimensions: 1536  # OpenAI text-embedding-3-small默认维度
+    chunk-size: 8192  # 文本分块大小
+    overlap-size: 200  # 重叠大小
+
+  metrics:
+    enabled: true
+    collection-interval-seconds: 60

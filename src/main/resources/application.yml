@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: vector-processing-engine
+  profiles:
+    active: vector
+
+logging:
+  level:
+    com.deepsearch.vector: DEBUG
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
