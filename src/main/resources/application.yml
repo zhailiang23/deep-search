@@ -38,6 +38,11 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+  task:
+    scheduling:
+      pool:
+        size: 5
+
 management:
   endpoints:
     web:
@@ -50,7 +55,9 @@ management:
 logging:
   level:
     com.deepsearch: INFO
+    com.deepsearch.vector: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.scheduling: INFO
     org.hibernate.SQL: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -61,3 +68,37 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
     enabled: true
+
+# 向量处理配置
+vector-processing:
+  default-mode: AUTO_SWITCH
+
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    models:
+      small: text-embedding-3-small
+      large: text-embedding-3-large
+    rate-limit: 1000  # requests per minute
+
+  local-models:
+    bert:
+      model-path: ./models/sentence-transformer
+      max-sequence-length: 512
+
+  cache:
+    enabled: true
+    ttl: 24h
+    max-size: 10000
+
+  mode-switching:
+    auto-switch-enabled: true
+    cost-threshold-cents: 1000  # 每小时成本阈值
+    latency-threshold-ms: 3000  # 延迟阈值
+    queue-size-threshold: 100   # 队列长度阈值
+    load-threshold: 0.8         # 系统负载阈值
+
+  task-queue:
+    batch-size: 50
+    max-concurrent-tasks: 10
+    retry-delay-seconds: 60s
+    max-retries: 3
