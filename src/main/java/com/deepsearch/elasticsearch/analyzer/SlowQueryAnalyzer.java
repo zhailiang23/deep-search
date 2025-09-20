@@ -18,7 +18,6 @@ public class SlowQueryAnalyzer {
     @Autowired
     private SearchPerformanceMonitor performanceMonitor;
 
-    private static final long SLOW_QUERY_THRESHOLD = 1000; // 1秒
     private static final long VERY_SLOW_QUERY_THRESHOLD = 3000; // 3秒
     private static final int ANALYSIS_REPORT_SIZE = 10;
 

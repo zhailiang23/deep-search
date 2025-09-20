@@ -1,16 +1,16 @@
 package com.deepsearch.elasticsearch.monitor;
 
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
-import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
