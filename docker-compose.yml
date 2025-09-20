@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # MySQL数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: deep-search-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: deep_search
+      MYSQL_USER: deep_search_user
+      MYSQL_PASSWORD: deep_search_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/init:/docker-entrypoint-initdb.d
+    networks:
+      - deep-search-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 10
+      interval: 10s
+      start_period: 30s
+
+  # Spring Boot应用服务
+  app:
+    build: .
+    container_name: deep-search-app
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_USERNAME: deep_search_user
+      DB_PASSWORD: deep_search_pass
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/deep_search?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      JWT_SECRET: mySecretKey1234567890abcdef1234567890abcdef
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - deep-search-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      timeout: 10s
+      retries: 10
+      interval: 30s
+      start_period: 60s
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  deep-search-network:
+    driver: bridge
