@@ -1,13 +1,14 @@
 package com.deepsearch.vector.optimization;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 文本预处理器
@@ -25,7 +26,6 @@ public class TextPreprocessor {
     );
 
     // 标点符号和特殊字符
-    private static final Pattern PUNCTUATION_PATTERN = Pattern.compile("[\\p{Punct}\\p{Space}]+");
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]+>");
     private static final Pattern URL_PATTERN = Pattern.compile("https?://[^\\s]+");

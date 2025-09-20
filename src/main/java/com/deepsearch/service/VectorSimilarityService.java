@@ -1,20 +1,28 @@
 package com.deepsearch.service;
 
-import com.deepsearch.entity.DocumentVector;
-import com.deepsearch.repository.DocumentVectorRepository;
-import com.deepsearch.vector.service.VectorProcessingEngine;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
+
+import com.deepsearch.entity.DocumentVector;
+import com.deepsearch.repository.DocumentVectorRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 向量相似度服务 - 提供高性能的向量相似度计算
@@ -25,7 +33,6 @@ import java.util.stream.IntStream;
 @Slf4j
 public class VectorSimilarityService {
 
-    private final VectorProcessingEngine vectorProcessingEngine;
     private final DocumentVectorRepository documentVectorRepository;
 
     // 异步执行器，用于并行计算
@@ -346,26 +353,6 @@ public class VectorSimilarityService {
         union.addAll(set2);
 
         return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
-    }
-
-    /**
-     * 反序列化向量数据
-     */
-    private List<Float> deserializeVector(String vectorData) {
-        if (vectorData == null || vectorData.trim().isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        try {
-            // 假设向量数据以逗号分隔的字符串存储
-            return Arrays.stream(vectorData.split(","))
-                .map(String::trim)
-                .map(Float::parseFloat)
-                .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.error("向量数据反序列化失败: {}", vectorData, e);
-            return Collections.emptyList();
-        }
     }
 
     /**

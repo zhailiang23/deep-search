@@ -1,25 +1,30 @@
 package com.deepsearch.service;
 
-import com.deepsearch.dto.Suggestion;
-import com.deepsearch.dto.SuggestionType;
-import com.deepsearch.entity.SearchLog;
-import com.deepsearch.entity.User;
-import com.deepsearch.repository.SearchLogRepository;
-import com.deepsearch.repository.UserRepository;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.deepsearch.dto.Suggestion;
+import com.deepsearch.dto.SuggestionType;
+import com.deepsearch.entity.SearchLog;
+import com.deepsearch.repository.SearchLogRepository;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+
 import jakarta.annotation.PostConstruct;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 自动补全服务
@@ -32,7 +37,6 @@ public class AutoCompleteService {
 
     private final TrieService trieService;
     private final SearchLogRepository searchLogRepository;
-    private final UserRepository userRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
     // 本地缓存，存储用户最近的建议
@@ -119,7 +123,6 @@ public class AutoCompleteService {
         String cacheKey = String.format("popular_%d_%d", limit, days);
 
         return popularQueryCache.get(cacheKey, key -> {
-            LocalDateTime startDate = LocalDateTime.now().minusDays(days);
             Pageable pageable = PageRequest.of(0, limit);
 
             List<Object[]> results = searchLogRepository.findPopularSearchTerms(pageable);

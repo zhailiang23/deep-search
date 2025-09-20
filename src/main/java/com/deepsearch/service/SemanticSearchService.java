@@ -1,22 +1,30 @@
 package com.deepsearch.service;
 
-import com.deepsearch.dto.DocumentResponseDto;
-import com.deepsearch.elasticsearch.dto.DocumentIndex;
-import com.deepsearch.elasticsearch.dto.SearchRequest;
-import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
-import com.deepsearch.entity.Document;
-import com.deepsearch.entity.User;
-import com.deepsearch.repository.DocumentRepository;
-import com.deepsearch.vector.service.VectorProcessingEngine;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.deepsearch.dto.DocumentResponseDto;
+import com.deepsearch.elasticsearch.dto.DocumentIndex;
+import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
+import com.deepsearch.entity.Document;
+import com.deepsearch.repository.DocumentRepository;
+import com.deepsearch.vector.service.VectorProcessingEngine;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 语义搜索服务 - 提供高级语义搜索功能

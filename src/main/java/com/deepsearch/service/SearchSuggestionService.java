@@ -1,19 +1,26 @@
 package com.deepsearch.service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
 import com.deepsearch.dto.SearchSuggestionResponse;
 import com.deepsearch.entity.SearchLog;
 import com.deepsearch.repository.SearchLogRepository;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * 搜索建议服务
@@ -360,7 +367,6 @@ public class SearchSuggestionService {
     private List<String> getRelatedQueriesFromHistory(String query, int limit) {
         try {
             // 查找与当前查询相关的历史搜索
-            Pageable pageable = PageRequest.of(0, limit * 3);
             List<SearchLog> recentLogs = searchLogRepository.findRecentSearchLogs(1000);
 
             return recentLogs.stream()

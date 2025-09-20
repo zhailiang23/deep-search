@@ -1,5 +1,20 @@
 package com.deepsearch.vector.scheduler;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
 import com.deepsearch.vector.config.VectorProcessingConfig;
 import com.deepsearch.vector.enums.ProcessingMode;
 import com.deepsearch.vector.model.ProcessingContext;
@@ -8,18 +23,9 @@ import com.deepsearch.vector.model.VectorTask;
 import com.deepsearch.vector.monitoring.VectorMetricsCollector;
 import com.deepsearch.vector.queue.VectorTaskQueueService;
 import com.deepsearch.vector.strategy.ModeSwitchStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 向量处理批量调度器
@@ -345,7 +351,6 @@ public class VectorProcessingScheduler {
     public void healthCheck() {
         try {
             VectorTaskQueueService.QueueStatus status = queueService.getQueueStatus();
-            ProcessingMetrics metrics = metricsCollector.getCurrentMetrics();
 
             logger.info("调度器健康检查 - 队列状态: 待处理={}, 处理中={}, 成功率={:.2f}%, 当前模式={}",
                        status.getPendingTasks(),

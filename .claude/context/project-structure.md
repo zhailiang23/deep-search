@@ -1,7 +1,7 @@
 ---
 created: 2025-09-20T02:51:13Z
-last_updated: 2025-09-20T08:17:33Z
-version: 1.1
+last_updated: 2025-09-20T13:01:14Z
+version: 1.2
 author: Claude Code PM System
 ---
 
@@ -52,28 +52,44 @@ src/main/java/com/deepsearch/
 ├── service/                           # Business logic layer
 │   ├── SearchService.java            # Core search functionality
 │   ├── DocumentService.java          # Document management
-│   └── UserService.java              # User management
+│   ├── UserService.java              # User management
+│   ├── HybridSearchService.java      # Hybrid search engine (ENHANCED)
+│   ├── SemanticSearchService.java    # Semantic search functionality
+│   ├── VectorSimilarityService.java  # Vector similarity calculations
+│   ├── ContextAwareSearchService.java # Context-aware search (NEW)
+│   ├── QueryExpansionService.java    # Query expansion with synonyms (NEW)
+│   ├── SynonymService.java           # Synonym management (NEW)
+│   ├── UserBehaviorService.java      # User behavior tracking (NEW)
+│   ├── SearchSecurityService.java    # Search security and permissions (NEW)
+│   ├── SearchResultConverter.java    # Search result conversion (NEW)
+│   └── SceneClassifier.java          # Scene classification (NEW)
 ├── entity/                            # JPA entities
 │   ├── Document.java                 # Main document entity
 │   ├── User.java                     # User entity
 │   ├── SearchLog.java                # Search analytics
 │   ├── DocumentVector.java           # Vector embeddings
 │   ├── VectorProcessingMetrics.java  # Processing metrics
-│   └── VectorProcessingTask.java     # Task management
+│   ├── VectorProcessingTask.java     # Task management
+│   ├── Synonym.java                  # Synonym entities for search expansion (NEW)
+│   └── UserSearchPreference.java    # User search preferences and behavior (NEW)
 ├── repository/                        # Data access layer
 │   ├── DocumentRepository.java       # Document data access
 │   ├── UserRepository.java           # User data access
 │   ├── SearchLogRepository.java      # Search logs
 │   ├── DocumentVectorRepository.java # Vector data
 │   ├── VectorMetricsRepository.java  # Metrics data
-│   └── VectorTaskRepository.java     # Task data
+│   ├── VectorTaskRepository.java     # Task data
+│   ├── SynonymRepository.java        # Synonym data access (NEW)
+│   └── UserSearchPreferenceRepository.java # User preference data (NEW)
 ├── dto/                               # Data Transfer Objects
 │   ├── ApiResponse.java              # Standard API response
 │   ├── DocumentCreateDto.java        # Document creation
 │   ├── DocumentResponseDto.java      # Document response
 │   ├── UserLoginDto.java             # User login
+│   ├── UserLoginResponseDto.java     # User login response (NEW)
 │   ├── UserRegistrationDto.java      # User registration
-│   └── UserResponseDto.java          # User response
+│   ├── UserResponseDto.java          # User response
+│   └── UserUpdateDto.java            # User update operations (NEW)
 ├── exception/                         # Exception handling
 │   ├── GlobalExceptionHandler.java   # Global error handler
 │   ├── ResourceNotFoundException.java # 404 errors
@@ -125,7 +141,8 @@ src/main/resources/
 ├── application-vector.yml             # Vector processing config
 ├── db/migration/                      # Database migrations
 │   ├── V1__Create_initial_schema.sql  # Initial schema
-│   └── V2__Create_vector_tables.sql   # Vector tables
+│   ├── V2__Create_vector_tables.sql   # Vector tables
+│   └── V3__Create_synonym_tables.sql  # Synonym tables (NEW)
 └── elasticsearch/mappings/            # Elasticsearch mappings
     └── document-index.json            # Document index with IK analyzer
 ```
@@ -134,10 +151,22 @@ src/main/resources/
 ```
 src/test/java/com/deepsearch/
 ├── controller/                        # Controller tests
-│   └── UserControllerTest.java       # User API tests
+│   ├── UserControllerTest.java       # User API tests (ENHANCED)
+│   └── AutoCompleteControllerTest.java # Auto-complete tests (NEW)
 ├── service/                           # Service layer tests
+│   ├── UserServiceTest.java          # User service tests (ENHANCED)
+│   ├── DocumentServiceTest.java      # Document service tests (ENHANCED)
+│   ├── HybridSearchServiceTest.java  # Hybrid search tests (ENHANCED)
+│   ├── HybridSearchServiceIntegrationTest.java # Integration tests (NEW)
+│   ├── QueryExpansionServiceTest.java # Query expansion tests (NEW)
+│   ├── SceneClassifierTest.java      # Scene classification tests (NEW)
+│   ├── SearchResultConverterTest.java # Result converter tests (NEW)
+│   ├── SearchSecurityServiceTest.java # Security service tests (NEW)
+│   ├── SemanticSearchServiceTest.java # Semantic search tests
+│   ├── SynonymServiceTest.java       # Synonym service tests (NEW)
+│   ├── UserBehaviorServiceTest.java  # User behavior tests (NEW)
 │   ├── UserServiceTest.java          # User service tests
-│   └── DocumentServiceTest.java      # Document service tests
+│   └── VectorSimilarityServiceTest.java # Vector similarity tests (ENHANCED)
 ├── vector/                            # Vector processing tests
 │   ├── VectorProcessingIntegrationTest.java # Integration tests
 │   ├── cache/
@@ -187,18 +216,24 @@ docker-compose.yml services:
 
 ### Completed Modules
 - ✅ **Core Spring Boot Application**: Main application and configuration
-- ✅ **Database Layer**: JPA entities and repositories for all data models
-- ✅ **Service Layer**: Business logic for users, documents, and search
+- ✅ **Database Layer**: JPA entities and repositories for all data models including synonyms
+- ✅ **Service Layer**: Enhanced business logic with intelligent search features
 - ✅ **API Layer**: REST controllers with comprehensive DTOs
 - ✅ **Vector Processing Engine**: Complete dual-mode processing system
 - ✅ **Docker Infrastructure**: Full containerized environment
 - ✅ **Elasticsearch Integration**: Search engine with IK Chinese analyzer
 - ✅ **Redis Caching**: Vector caching and session management
 - ✅ **Exception Handling**: Global error handling and custom exceptions
+- ✅ **Intelligent Search Features**: Synonym expansion, query enhancement, auto-complete
+- ✅ **User Behavior Tracking**: User search preferences and behavior analysis
+- ✅ **Search Security**: Permission-based search access control
+- ✅ **Context-Aware Search**: Scene classification and contextual search
+- ✅ **Test Suite**: Comprehensive test coverage for all new functionality
 
-### In Progress
-- ⚠️ **Redis Authentication**: Password configuration issue needs resolution
-- 🔄 **Search Functionality**: Core search features (Issue #13)
+### Recently Completed (Issue #13)
+- ✅ **Search Functionality**: All core intelligent search features implemented
+- ✅ **System Integration**: All middleware services properly configured
+- ✅ **Code Quality**: All tests passing with enhanced test coverage
 
 ### Planned Modules
 - 📋 **Permission System**: Three-tier permission architecture (Issue #14)
@@ -245,4 +280,5 @@ docker-compose.yml services:
 - Docker-first deployment strategy
 
 ## Update History
+- 2025-09-20T13:01:14Z: Issue #13完成更新 - 新增25个文件，包括同义词系统、查询扩展、用户行为跟踪等智能搜索功能，全面更新测试套件
 - 2025-09-20T08:17:33Z: Updated with current implementation structure, Docker infrastructure, and completed modules based on recent commits

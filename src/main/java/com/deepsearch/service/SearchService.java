@@ -1,26 +1,28 @@
 package com.deepsearch.service;
 
-import com.deepsearch.dto.DocumentResponseDto;
-import com.deepsearch.elasticsearch.dto.SearchRequest;
-import com.deepsearch.entity.Document;
-import com.deepsearch.entity.SearchLog;
-import com.deepsearch.elasticsearch.dto.DocumentIndex;
-import com.deepsearch.elasticsearch.dto.SearchResult;
-import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
-import com.deepsearch.exception.BadRequestException;
-import com.deepsearch.repository.DocumentRepository;
-import com.deepsearch.repository.SearchLogRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.deepsearch.dto.DocumentResponseDto;
+import com.deepsearch.elasticsearch.dto.DocumentIndex;
+import com.deepsearch.elasticsearch.dto.SearchRequest;
+import com.deepsearch.elasticsearch.dto.SearchResult;
+import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
+import com.deepsearch.entity.Document;
+import com.deepsearch.entity.SearchLog;
+import com.deepsearch.exception.BadRequestException;
+import com.deepsearch.repository.DocumentRepository;
+import com.deepsearch.repository.SearchLogRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 搜索业务服务 - 整合Elasticsearch搜索引擎与业务逻辑
@@ -195,7 +197,6 @@ public class SearchService {
 
         // 搜索标题和内容匹配的文档
         List<Document> titleMatches = documentRepository.findByTitleContainingIgnoreCase(queryText);
-        List<Document> contentMatches = documentRepository.findByContentContainingIgnoreCase(queryText);
 
         // 合并结果并去重
         return titleMatches.stream()

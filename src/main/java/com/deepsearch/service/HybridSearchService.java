@@ -1,19 +1,26 @@
 package com.deepsearch.service;
 
-import com.deepsearch.elasticsearch.dto.SearchRequest;
-import com.deepsearch.elasticsearch.dto.DocumentIndex;
-import com.deepsearch.elasticsearch.dto.SearchResult;
-import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
+import com.deepsearch.elasticsearch.dto.DocumentIndex;
+import com.deepsearch.elasticsearch.dto.SearchRequest;
+import com.deepsearch.elasticsearch.dto.SearchResult;
+import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 混合搜索服务 - 实现关键词搜索与语义搜索的并行执行与结果合并
@@ -26,10 +33,8 @@ public class HybridSearchService {
 
     private final ElasticsearchSearchService elasticsearchService;
     private final SearchRelevanceService relevanceService;
-    private final SynonymService synonymService;
     private final QueryExpansionService queryExpansionService;
     private final SearchSecurityService searchSecurityService;
-    private final SearchResultConverter searchResultConverter;
 
     // 用于并行搜索的线程池
     private final ExecutorService searchExecutor = Executors.newFixedThreadPool(4);

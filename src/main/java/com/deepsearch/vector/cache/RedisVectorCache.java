@@ -1,15 +1,5 @@
 package com.deepsearch.vector.cache;
 
-import com.deepsearch.vector.model.Vector;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
@@ -17,6 +7,17 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.stereotype.Component;
+
+import com.deepsearch.vector.model.Vector;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Redis向量缓存实现
@@ -62,7 +63,6 @@ public class RedisVectorCache implements VectorCache {
 
     private final DefaultRedisScript<String> getAndCountScript;
 
-    @Autowired
     public RedisVectorCache(RedisTemplate<String, String> redisTemplate,
                            ObjectMapper objectMapper,
                            @Value("${vector.cache.default-ttl:24h}") Duration defaultTtl) {
