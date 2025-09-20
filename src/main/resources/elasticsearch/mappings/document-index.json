@@ -1,0 +1,88 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "analyzer": {
+        "ik_max_word_analyzer": {
+          "type": "ik_max_word"
+        },
+        "ik_smart_analyzer": {
+          "type": "ik_smart"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "title": {
+        "type": "text",
+        "analyzer": "ik_max_word_analyzer",
+        "search_analyzer": "ik_smart_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "content": {
+        "type": "text",
+        "analyzer": "ik_max_word_analyzer",
+        "search_analyzer": "ik_smart_analyzer"
+      },
+      "summary": {
+        "type": "text",
+        "analyzer": "ik_max_word_analyzer",
+        "search_analyzer": "ik_smart_analyzer"
+      },
+      "tags": {
+        "type": "keyword"
+      },
+      "category": {
+        "type": "keyword"
+      },
+      "source": {
+        "type": "keyword"
+      },
+      "channel": {
+        "type": "keyword"
+      },
+      "space_id": {
+        "type": "keyword"
+      },
+      "content_vector": {
+        "type": "dense_vector",
+        "dims": 1536,
+        "similarity": "cosine"
+      },
+      "title_vector": {
+        "type": "dense_vector",
+        "dims": 1536,
+        "similarity": "cosine"
+      },
+      "created_at": {
+        "type": "date",
+        "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+      },
+      "updated_at": {
+        "type": "date",
+        "format": "yyyy-MM-dd HH:mm:ss||yyyy-MM-dd||epoch_millis"
+      },
+      "popularity_score": {
+        "type": "float"
+      },
+      "relevance_boost": {
+        "type": "float",
+        "null_value": 1.0
+      },
+      "metadata": {
+        "type": "object",
+        "dynamic": true
+      }
+    }
+  }
+}

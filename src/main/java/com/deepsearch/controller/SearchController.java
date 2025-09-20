@@ -1,8 +1,8 @@
 package com.deepsearch.controller;
 
 import com.deepsearch.dto.ApiResponse;
-import com.deepsearch.dto.SearchRequestDto;
-import com.deepsearch.dto.SearchResponseDto;
+import com.deepsearch.elasticsearch.dto.SearchRequest;
+import com.deepsearch.elasticsearch.dto.SearchResult;
 import com.deepsearch.entity.SearchLog;
 import com.deepsearch.service.SearchService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,10 +41,10 @@ public class SearchController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "搜索参数错误")
     })
     @PostMapping
-    public ResponseEntity<ApiResponse<SearchResponseDto>> search(
-            @Valid @RequestBody SearchRequestDto searchRequest) {
+    public ResponseEntity<ApiResponse<SearchResult>> search(
+            @Valid @RequestBody SearchRequest searchRequest) {
         log.info("搜索请求: {} - {}", searchRequest.getQueryText(), searchRequest.getSearchType());
-        SearchResponseDto searchResponse = searchService.search(searchRequest);
+        SearchResult searchResponse = searchService.search(searchRequest);
         return ResponseEntity.ok(ApiResponse.success(searchResponse));
     }
 
@@ -167,18 +167,18 @@ public class SearchController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "搜索参数错误")
     })
     @GetMapping("/quick")
-    public ResponseEntity<ApiResponse<SearchResponseDto>> quickSearch(
+    public ResponseEntity<ApiResponse<SearchResult>> quickSearch(
             @Parameter(description = "搜索关键词") @RequestParam String query,
             @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") int size) {
 
-        SearchRequestDto searchRequest = new SearchRequestDto();
+        SearchRequest searchRequest = new SearchRequest();
         searchRequest.setQueryText(query);
-        searchRequest.setSearchType(SearchLog.SearchType.KEYWORD);
-        searchRequest.setPageNumber(page);
-        searchRequest.setPageSize(size);
+        searchRequest.setSearchType("keyword");
+        searchRequest.setFrom(page * size);
+        searchRequest.setSize(size);
 
-        SearchResponseDto searchResponse = searchService.search(searchRequest);
+        SearchResult searchResponse = searchService.search(searchRequest);
         return ResponseEntity.ok(ApiResponse.success(searchResponse));
     }
 
@@ -191,18 +191,18 @@ public class SearchController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "搜索参数错误")
     })
     @GetMapping("/semantic")
-    public ResponseEntity<ApiResponse<SearchResponseDto>> semanticSearch(
+    public ResponseEntity<ApiResponse<SearchResult>> semanticSearch(
             @Parameter(description = "搜索查询") @RequestParam String query,
             @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") int size) {
 
-        SearchRequestDto searchRequest = new SearchRequestDto();
+        SearchRequest searchRequest = new SearchRequest();
         searchRequest.setQueryText(query);
-        searchRequest.setSearchType(SearchLog.SearchType.SEMANTIC);
-        searchRequest.setPageNumber(page);
-        searchRequest.setPageSize(size);
+        searchRequest.setSearchType("vector");
+        searchRequest.setFrom(page * size);
+        searchRequest.setSize(size);
 
-        SearchResponseDto searchResponse = searchService.search(searchRequest);
+        SearchResult searchResponse = searchService.search(searchRequest);
         return ResponseEntity.ok(ApiResponse.success(searchResponse));
     }
 
@@ -215,18 +215,18 @@ public class SearchController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "搜索参数错误")
     })
     @GetMapping("/hybrid")
-    public ResponseEntity<ApiResponse<SearchResponseDto>> hybridSearch(
+    public ResponseEntity<ApiResponse<SearchResult>> hybridSearch(
             @Parameter(description = "搜索查询") @RequestParam String query,
             @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") int size) {
 
-        SearchRequestDto searchRequest = new SearchRequestDto();
+        SearchRequest searchRequest = new SearchRequest();
         searchRequest.setQueryText(query);
-        searchRequest.setSearchType(SearchLog.SearchType.HYBRID);
-        searchRequest.setPageNumber(page);
-        searchRequest.setPageSize(size);
+        searchRequest.setSearchType("hybrid");
+        searchRequest.setFrom(page * size);
+        searchRequest.setSize(size);
 
-        SearchResponseDto searchResponse = searchService.search(searchRequest);
+        SearchResult searchResponse = searchService.search(searchRequest);
         return ResponseEntity.ok(ApiResponse.success(searchResponse));
     }
 }

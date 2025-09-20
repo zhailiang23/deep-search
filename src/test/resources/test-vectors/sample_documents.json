@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "title": "信用卡申请指南",
+    "content": "申请信用卡需要提供身份证、收入证明等材料。恒丰银行提供多种信用卡产品，包括白金卡、金卡和普通卡。申请流程简单，审批速度快，通常3-5个工作日内可获得批复。",
+    "type": "guide",
+    "expectedVector": {
+      "dimension": 1536,
+      "modelName": "text-embedding-3-small"
+    }
+  },
+  {
+    "id": 2,
+    "title": "个人住房贷款产品介绍",
+    "content": "恒丰银行个人住房贷款利率优惠，最长贷款期限30年，首付比例低至20%。支持等额本息和等额本金两种还款方式，提供在线申请服务，专业客户经理一对一服务。",
+    "type": "product",
+    "expectedVector": {
+      "dimension": 1536,
+      "modelName": "text-embedding-3-small"
+    }
+  },
+  {
+    "id": 3,
+    "title": "理财产品风险评估",
+    "content": "投资理财产品前需进行风险评估，了解自身风险承受能力。理财产品分为保守型、稳健型、平衡型、成长型和激进型五个等级。建议根据个人财务状况选择合适的产品。",
+    "type": "assessment",
+    "expectedVector": {
+      "dimension": 768,
+      "modelName": "local-bert"
+    }
+  },
+  {
+    "id": 4,
+    "title": "企业融资解决方案",
+    "content": "为中小企业提供综合融资解决方案，包括流动资金贷款、设备购置贷款、承兑汇票等多种产品。融资期限灵活，利率优惠，审批流程简化，支持企业快速发展。",
+    "type": "solution",
+    "expectedVector": {
+      "dimension": 1536,
+      "modelName": "text-embedding-3-small"
+    }
+  },
+  {
+    "id": 5,
+    "title": "外汇交易服务说明",
+    "content": "提供美元、欧元、日元、英镑等主要货币的外汇交易服务。实时汇率查询，24小时在线交易，手续费优惠。支持即期外汇、远期外汇和外汇掉期等多种交易方式。",
+    "type": "service",
+    "expectedVector": {
+      "dimension": 768,
+      "modelName": "local-bert"
+    }
+  },
+  {
+    "id": 6,
+    "title": "网上银行安全指南",
+    "content": "网上银行安全使用指南：定期更改密码，不在公共场所登录，注意识别钓鱼网站，及时更新浏览器安全补丁。使用数字证书和短信验证码进行双重认证，确保资金安全。",
+    "type": "security",
+    "expectedVector": {
+      "dimension": 1536,
+      "modelName": "text-embedding-3-large"
+    }
+  },
+  {
+    "id": 7,
+    "title": "基金投资入门知识",
+    "content": "基金投资是分散投资风险的有效方式。基金类型包括股票型、债券型、混合型和货币型。投资者应根据投资目标、风险承受能力和投资期限选择合适的基金产品。",
+    "type": "education",
+    "expectedVector": {
+      "dimension": 768,
+      "modelName": "local-bert"
+    }
+  },
+  {
+    "id": 8,
+    "title": "保险理赔服务流程",
+    "content": "保险理赔服务流程：出险报案、查勘定损、递交理赔资料、理赔审核、理赔款支付。全程提供专业理赔服务，简化理赔流程，缩短理赔时间，确保客户权益。",
+    "type": "process",
+    "expectedVector": {
+      "dimension": 1536,
+      "modelName": "text-embedding-3-small"
+    }
+  },
+  {
+    "id": 9,
+    "title": "手机银行功能介绍",
+    "content": "手机银行提供账户查询、转账汇款、信用卡还款、理财购买、生活缴费等全方位金融服务。支持指纹识别、人脸识别等生物识别技术，操作简便，安全可靠。",
+    "type": "feature",
+    "expectedVector": {
+      "dimension": 768,
+      "modelName": "local-bert"
+    }
+  },
+  {
+    "id": 10,
+    "title": "客户服务热线使用指南",
+    "content": "恒丰银行客户服务热线95395提供7×24小时服务。可办理账户查询、密码重置、挂失解挂、投诉建议等业务。智能语音导航，人工客服专业耐心，为您提供优质服务。",
+    "type": "support",
+    "expectedVector": {
+      "dimension": 1536,
+      "modelName": "text-embedding-3-small"
+    }
+  }
+]

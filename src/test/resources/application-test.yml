@@ -1,24 +1,144 @@
+# 向量处理引擎测试配置
+vector-processing:
+  default-mode: AUTO_SWITCH
+
+  # OpenAI配置（测试环境使用模拟服务）
+  openai:
+    api-key: ${OPENAI_API_KEY:test-api-key}
+    api-url: ${OPENAI_API_URL:https://api.openai.com/v1/embeddings}
+    models:
+      small: text-embedding-3-small
+      large: text-embedding-3-large
+    rate-limit: 1000  # requests per minute
+    timeout: 30000    # 30 seconds
+    max-retries: 3
+
+  # 本地模型配置
+  local-models:
+    bert:
+      model-path: ${LOCAL_BERT_MODEL_PATH:./models/sentence-transformer}
+      max-sequence-length: 512
+      dimension: 768
+      batch-size: 32
+      max-memory-mb: 2048
+
+  # 缓存配置
+  cache:
+    enabled: true
+    provider: memory  # memory, redis
+    ttl: 1h          # 缓存过期时间
+    max-size: 10000  # 最大缓存条目数
+
+  # 模式切换策略配置
+  mode-switching:
+    auto-switch-enabled: true
+    cost-threshold-cents: 1000     # 每小时成本阈值（分）
+    latency-threshold-ms: 3000     # 延迟阈值（毫秒）
+    queue-size-threshold: 100      # 队列长度阈值
+    cpu-threshold-percent: 80      # CPU使用率阈值
+    memory-threshold-percent: 85   # 内存使用率阈值
+
+  # 任务队列配置
+  task-queue:
+    provider: memory    # memory, redis, database
+    batch-size: 50
+    max-concurrent-tasks: 10
+    retry-delay-seconds: 60
+    max-queue-size: 1000
+    processing-timeout-seconds: 300
+
+  # 性能监控配置
+  metrics:
+    enabled: true
+    collection-interval-seconds: 60
+    retention-hours: 24
+    detailed-logging: true
+
+# 测试专用配置
+test:
+  vector-processing:
+    # 性能测试配置
+    performance:
+      batch-size-1000: 1000
+      concurrent-queries-50: 50
+      stress-test-documents: 5000
+      max-concurrent-threads: 100
+
+    # 质量测试配置
+    quality:
+      similarity-threshold: 0.7
+      vector-dimension-tolerance: 0
+      processing-time-threshold-ms: 5000
+
+    # 错误处理测试配置
+    error-handling:
+      retry-attempts: 3
+      timeout-seconds: 30
+      failure-rate-threshold: 0.1
+
+    # 测试数据配置
+    test-data:
+      sample-documents-path: classpath:test-vectors/sample_documents.json
+      sample-queries-path: classpath:test-vectors/sample_queries.json
+      generate-random-data: true
+      random-data-size: 100
+
+# Spring Boot测试配置
 spring:
+  test:
+    database:
+      replace: none
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password:
-
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
-        format_sql: true
+    show-sql: false
 
-  h2:
-    console:
-      enabled: true
-
+# 日志配置
 logging:
   level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.deepsearch.vector: DEBUG
+    org.springframework.test: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} - %msg%n'
+
+# 测试环境特殊配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info
+  endpoint:
+    health:
+      show-details: always
+
+# Elasticsearch 测试配置
+elasticsearch:
+  host: ${ELASTICSEARCH_HOST:localhost}
+  port: ${ELASTICSEARCH_PORT:9200}
+  scheme: http
+  username:
+  password:
+  connection-timeout: 5000
+  socket-timeout: 30000
+  max-connections: 10
+  max-connections-per-route: 5
+
+# Elasticsearch集成测试配置
+test:
+  elasticsearch:
+    index-prefix: test_  # 测试索引前缀
+    cleanup-after-test: true  # 测试后清理数据
+    wait-for-index-ms: 2000   # 等待索引刷新时间
+    test-document-count: 100  # 测试文档数量
+
+  performance:
+    max-response-time-ms: 500  # 最大响应时间
+    min-success-rate: 95.0     # 最小成功率
+    concurrent-users: 10       # 并发用户数
+    search-iterations: 50      # 搜索迭代次数

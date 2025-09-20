@@ -1,0 +1,43 @@
+# Elasticsearch 8.x configuration for deep-search platform
+cluster.name: "deep-search-cluster"
+node.name: "deep-search-node-1"
+
+# Network settings
+network.host: 0.0.0.0
+http.port: 9200
+
+# Path settings
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+# Discovery settings for single node
+discovery.type: single-node
+
+# Security settings (disable for development)
+xpack.security.enabled: false
+xpack.security.enrollment.enabled: false
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
+
+# Machine learning settings
+xpack.ml.enabled: false
+
+# Index settings
+action.auto_create_index: true
+indices.id_field_data.enabled: true
+
+# Memory lock settings
+bootstrap.memory_lock: true
+
+# HTTP settings
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-headers: "Authorization, X-Requested-With, Content-Length, Content-Type"
+
+# Thread pool settings for better performance
+thread_pool.search.size: 4
+thread_pool.search.queue_size: 1000
+
+# IK analyzer plugin settings (Chinese text analysis)
+index.analysis.analyzer.default.type: ik_max_word
+index.analysis.search_analyzer.default.type: ik_smart

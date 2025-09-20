@@ -1,0 +1,38 @@
+{
+  "index": {
+    "number_of_shards": "1",
+    "number_of_replicas": "0",
+    "max_result_window": "50000",
+    "analysis": {
+      "analyzer": {
+        "chinese_analyzer": {
+          "type": "ik_max_word"
+        },
+        "chinese_search_analyzer": {
+          "type": "ik_smart"
+        },
+        "keyword_analyzer": {
+          "type": "keyword"
+        }
+      },
+      "normalizer": {
+        "lowercase_normalizer": {
+          "type": "custom",
+          "filter": ["lowercase"]
+        }
+      }
+    },
+    "similarity": {
+      "scripted_tfidf": {
+        "type": "scripted",
+        "script": {
+          "source": "Math.log(2 + (doc.freq / (doc.freq + 1.0 * (params.k1 + 1)))) * Math.log((field.docCount + 1.0) / (term.docFreq + 1.0)) + 1.0"
+        }
+      }
+    },
+    "refresh_interval": "1s",
+    "translog": {
+      "flush_threshold_size": "512mb"
+    }
+  }
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "id": 1,
+    "query": "如何申请信用卡",
+    "expectedDocuments": [1],
+    "expectedSimilarityThreshold": 0.8,
+    "description": "信用卡申请相关查询"
+  },
+  {
+    "id": 2,
+    "query": "房贷利率是多少",
+    "expectedDocuments": [2],
+    "expectedSimilarityThreshold": 0.75,
+    "description": "房贷产品相关查询"
+  },
+  {
+    "id": 3,
+    "query": "理财产品风险评估",
+    "expectedDocuments": [3],
+    "expectedSimilarityThreshold": 0.85,
+    "description": "理财风险评估查询"
+  },
+  {
+    "id": 4,
+    "query": "企业贷款申请条件",
+    "expectedDocuments": [4],
+    "expectedSimilarityThreshold": 0.7,
+    "description": "企业融资相关查询"
+  },
+  {
+    "id": 5,
+    "query": "外汇兑换手续费",
+    "expectedDocuments": [5],
+    "expectedSimilarityThreshold": 0.75,
+    "description": "外汇服务相关查询"
+  },
+  {
+    "id": 6,
+    "query": "网银安全使用方法",
+    "expectedDocuments": [6],
+    "expectedSimilarityThreshold": 0.8,
+    "description": "网银安全相关查询"
+  },
+  {
+    "id": 7,
+    "query": "基金投资建议",
+    "expectedDocuments": [7],
+    "expectedSimilarityThreshold": 0.75,
+    "description": "基金投资相关查询"
+  },
+  {
+    "id": 8,
+    "query": "保险理赔流程",
+    "expectedDocuments": [8],
+    "expectedSimilarityThreshold": 0.9,
+    "description": "保险理赔相关查询"
+  },
+  {
+    "id": 9,
+    "query": "手机银行转账限额",
+    "expectedDocuments": [9],
+    "expectedSimilarityThreshold": 0.7,
+    "description": "手机银行功能查询"
+  },
+  {
+    "id": 10,
+    "query": "客服电话号码",
+    "expectedDocuments": [10],
+    "expectedSimilarityThreshold": 0.8,
+    "description": "客服联系方式查询"
+  },
+  {
+    "id": 11,
+    "query": "定期存款利率",
+    "expectedDocuments": [],
+    "expectedSimilarityThreshold": 0.5,
+    "description": "无直接匹配文档的查询"
+  },
+  {
+    "id": 12,
+    "query": "银行卡挂失补办",
+    "expectedDocuments": [10],
+    "expectedSimilarityThreshold": 0.6,
+    "description": "银行卡服务相关查询"
+  }
+]

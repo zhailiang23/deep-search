@@ -43,6 +43,20 @@ spring:
       pool:
         size: 5
 
+  # Redis 配置
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    password: ${SPRING_REDIS_PASSWORD:}
+    database: 0
+    timeout: 10s
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
+
 management:
   endpoints:
     web:
@@ -102,3 +116,15 @@ vector-processing:
     max-concurrent-tasks: 10
     retry-delay-seconds: 60s
     max-retries: 3
+
+# Elasticsearch 配置
+elasticsearch:
+  host: ${ELASTICSEARCH_HOST:localhost}
+  port: ${ELASTICSEARCH_PORT:9200}
+  scheme: ${ELASTICSEARCH_SCHEME:http}
+  username: ${ELASTICSEARCH_USERNAME:}
+  password: ${ELASTICSEARCH_PASSWORD:}
+  connection-timeout: ${ELASTICSEARCH_CONNECTION_TIMEOUT:10000}
+  socket-timeout: ${ELASTICSEARCH_SOCKET_TIMEOUT:30000}
+  max-connections: ${ELASTICSEARCH_MAX_CONNECTIONS:100}
+  max-connections-per-route: ${ELASTICSEARCH_MAX_CONNECTIONS_PER_ROUTE:10}

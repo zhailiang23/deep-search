@@ -1,0 +1,47 @@
+# JVM settings for Elasticsearch 8.x
+
+# Memory settings
+-Xms1g
+-Xmx1g
+
+# GC settings
+-XX:+UseG1GC
+-XX:G1HeapRegionSize=16m
+-XX:+UseG1OldGCCount
+-XX:+DisableExplicitGC
+
+# GC logging
+-Xlog:gc*,gc+age=trace,safepoint:gc.log:utctime,pid,tags:filecount=32,filesize=64m
+
+# JVM fatal error logs
+-XX:+ExitOnOutOfMemoryError
+
+# Security manager
+-Djava.security.manager=default
+
+# File encoding
+-Dfile.encoding=UTF-8
+
+# Networking
+-Djava.net.preferIPv4Stack=true
+
+# Elasticsearch settings
+-Des.enforce.bootstrap.checks=true
+-Des.path.home=/usr/share/elasticsearch
+-Des.path.conf=/usr/share/elasticsearch/config
+-Des.distribution.flavor=default
+-Des.distribution.type=docker
+
+# Disable JDK built-in serialization filters
+-Des.allow_insecure_settings=true
+
+# Temporary directory
+-Djava.io.tmpdir=${ES_TMPDIR}
+
+# Heap dumps
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/usr/share/elasticsearch/data
+
+# Performance optimizations
+-XX:+UnlockExperimentalVMOptions
+-XX:+UseCGroupMemoryLimitForHeap

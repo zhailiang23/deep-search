@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
@@ -34,9 +35,26 @@ public class RedisConfig {
      * Redis连接工厂配置
      */
     @Bean
-    public LettuceConnectionFactory redisConnectionFactory() {
+    public LettuceConnectionFactory redisConnectionFactory(
+            @Value("${spring.redis.host:localhost}") String host,
+            @Value("${spring.redis.port:6379}") int port,
+            @Value("${spring.redis.password:}") String password,
+            @Value("${spring.redis.database:0}") int database) {
+        
         log.info("初始化Redis连接工厂，缓存启用状态: {}", cacheEnabled);
-        return new LettuceConnectionFactory();
+        log.info("Redis连接配置 - Host: {}, Port: {}, Database: {}", host, port, database);
+        
+        RedisStandaloneConfiguration redisConfig = new RedisStandaloneConfiguration();
+        redisConfig.setHostName(host);
+        redisConfig.setPort(port);
+        redisConfig.setDatabase(database);
+        
+        if (password != null && !password.trim().isEmpty()) {
+            redisConfig.setPassword(password);
+            log.info("Redis密码认证已配置");
+        }
+        
+        return new LettuceConnectionFactory(redisConfig);
     }
 
     /**

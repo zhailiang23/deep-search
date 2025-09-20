@@ -1,8 +1,8 @@
 package com.deepsearch.service;
 
+import com.deepsearch.elasticsearch.dto.SearchRequest;
+import com.deepsearch.elasticsearch.dto.SearchResult;
 import com.deepsearch.dto.DocumentResponseDto;
-import com.deepsearch.dto.SearchRequestDto;
-import com.deepsearch.dto.SearchResponseDto;
 import com.deepsearch.entity.Document;
 import com.deepsearch.entity.SearchLog;
 import com.deepsearch.entity.User;
@@ -11,6 +11,8 @@ import com.deepsearch.exception.ResourceNotFoundException;
 import com.deepsearch.repository.DocumentRepository;
 import com.deepsearch.repository.SearchLogRepository;
 import com.deepsearch.repository.UserRepository;
+import com.deepsearch.elasticsearch.service.ElasticsearchSearchService;
+import com.deepsearch.elasticsearch.dto.DocumentIndex;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -20,12 +22,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 搜索业务服务
+ * 搜索业务服务 - 整合Elasticsearch搜索引擎与业务逻辑
  */
 @Service
 @Transactional
@@ -36,39 +41,42 @@ public class SearchService {
     private final DocumentRepository documentRepository;
     private final SearchLogRepository searchLogRepository;
     private final UserRepository userRepository;
+    private final ElasticsearchSearchService elasticsearchSearchService;
 
     /**
-     * 执行搜索
+     * 执行搜索 - 统一搜索入口
      */
-    public SearchResponseDto search(SearchRequestDto searchRequest) {
+    public SearchResult search(SearchRequest searchRequest) {
         long startTime = System.currentTimeMillis();
 
         try {
             List<DocumentResponseDto> results;
-            int totalResults;
 
-            // 根据搜索类型执行不同的搜索策略
-            switch (searchRequest.getSearchType()) {
-                case KEYWORD:
+            // 根据查询文本判断搜索类型，如果没有指定则默认为混合搜索
+            String searchType = determineSearchType(searchRequest);
+            
+            // 使用Elasticsearch引擎执行搜索
+            switch (searchType.toLowerCase()) {
+                case "keyword":
                     results = performKeywordSearch(searchRequest);
                     break;
-                case SEMANTIC:
+                case "semantic":
+                case "vector":
                     results = performSemanticSearch(searchRequest);
                     break;
-                case HYBRID:
+                case "hybrid":
+                default:
                     results = performHybridSearch(searchRequest);
                     break;
-                default:
-                    throw new BadRequestException("不支持的搜索类型: " + searchRequest.getSearchType());
             }
 
-            totalResults = results.size();
+            int totalResults = results.size();
 
-            // 分页处理
-            int pageNumber = searchRequest.getPageNumber();
-            int pageSize = searchRequest.getPageSize();
-            int startIndex = pageNumber * pageSize;
-            int endIndex = Math.min(startIndex + pageSize, totalResults);
+            // 处理分页
+            int from = searchRequest.getFrom();
+            int size = searchRequest.getSize();
+            int startIndex = from;
+            int endIndex = Math.min(startIndex + size, totalResults);
 
             List<DocumentResponseDto> pagedResults = results.subList(startIndex, endIndex);
 
@@ -76,27 +84,137 @@ public class SearchService {
             long responseTime = endTime - startTime;
 
             // 记录搜索日志
-            recordSearchLog(searchRequest, totalResults, (int) responseTime);
+            recordSearchLog(searchRequest, totalResults, (int) responseTime, searchType);
 
-            return new SearchResponseDto(
-                    searchRequest.getQueryText(),
-                    pagedResults,
-                    totalResults,
-                    pageNumber,
-                    pageSize,
-                    responseTime
+            // 构建SearchResult响应
+            SearchResult searchResult = new SearchResult(
+                searchRequest.getQuery(),
+                convertToDocumentIndex(pagedResults),
+                totalResults,
+                from / size,
+                size,
+                responseTime,
+                searchType
             );
 
+            return searchResult;
+
         } catch (Exception e) {
-            log.error("搜索执行失败: {}", searchRequest.getQueryText(), e);
+            log.error("搜索执行失败: {}", searchRequest.getQuery(), e);
             throw new BadRequestException("搜索执行失败: " + e.getMessage());
         }
     }
 
     /**
-     * 关键词搜索
+     * 判断搜索类型
      */
-    private List<DocumentResponseDto> performKeywordSearch(SearchRequestDto searchRequest) {
+    private String determineSearchType(SearchRequest searchRequest) {
+        // 如果设置了向量权重，说明是混合搜索
+        if (searchRequest.getVectorWeight() != null && searchRequest.getVectorWeight() > 0) {
+            return "hybrid";
+        }
+        // 如果设置了关键词权重但没有向量权重，说明是关键词搜索
+        if (searchRequest.getKeywordWeight() != null && searchRequest.getKeywordWeight() > 0 &&
+            (searchRequest.getVectorWeight() == null || searchRequest.getVectorWeight() == 0)) {
+            return "keyword";
+        }
+        // 默认使用混合搜索
+        return "hybrid";
+    }
+
+    /**
+     * 将DocumentResponseDto转换为DocumentIndex（用于SearchResult）
+     */
+    private List<DocumentIndex> convertToDocumentIndex(List<DocumentResponseDto> documents) {
+        return documents.stream().map(doc -> {
+            DocumentIndex docIndex = new DocumentIndex();
+            docIndex.setId(doc.getId().toString());
+            docIndex.setTitle(doc.getTitle());
+            docIndex.setContent(doc.getContent());
+            docIndex.setSummary(doc.getSummary());
+            docIndex.setCategory(doc.getCategory());
+            docIndex.setSource("database"); // 标记数据来源
+            docIndex.setCreatedAt(doc.getCreatedAt());
+            docIndex.setUpdatedAt(doc.getUpdatedAt());
+            return docIndex;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 关键词搜索 - 委托给Elasticsearch
+     */
+    private List<DocumentResponseDto> performKeywordSearch(SearchRequest searchRequest) {
+        try {
+            String spaceId = getCurrentUserSpaceId();
+            List<String> channels = getCurrentUserChannels();
+            
+            List<DocumentIndex> elasticsearchResults = elasticsearchSearchService.keywordSearch(
+                searchRequest.getQueryText(),
+                spaceId,
+                channels,
+                0,
+                1000  // 获取更多结果用于业务层处理
+            );
+
+            return convertElasticsearchResults(elasticsearchResults);
+        } catch (IOException e) {
+            log.warn("Elasticsearch关键词搜索失败，降级到数据库搜索: {}", e.getMessage());
+            return performFallbackKeywordSearch(searchRequest);
+        }
+    }
+
+    /**
+     * 语义搜索 - 委托给Elasticsearch向量搜索
+     */
+    private List<DocumentResponseDto> performSemanticSearch(SearchRequest searchRequest) {
+        try {
+            String spaceId = getCurrentUserSpaceId();
+            List<String> channels = getCurrentUserChannels();
+            
+            List<DocumentIndex> elasticsearchResults = elasticsearchSearchService.vectorSearch(
+                searchRequest.getQueryText(),
+                spaceId,
+                channels,
+                0,
+                1000
+            );
+
+            return convertElasticsearchResults(elasticsearchResults);
+        } catch (IOException e) {
+            log.warn("Elasticsearch语义搜索失败，降级到关键词搜索: {}", e.getMessage());
+            return performFallbackKeywordSearch(searchRequest);
+        }
+    }
+
+    /**
+     * 混合搜索 - 委托给Elasticsearch混合搜索
+     */
+    private List<DocumentResponseDto> performHybridSearch(SearchRequest searchRequest) {
+        try {
+            String spaceId = getCurrentUserSpaceId();
+            List<String> channels = getCurrentUserChannels();
+            
+            List<DocumentIndex> elasticsearchResults = elasticsearchSearchService.hybridSearch(
+                searchRequest.getQueryText(),
+                spaceId,
+                channels,
+                0,
+                1000,
+                1.0f,  // 关键词权重
+                2.0f   // 向量权重
+            );
+
+            return convertElasticsearchResults(elasticsearchResults);
+        } catch (IOException e) {
+            log.warn("Elasticsearch混合搜索失败，降级到关键词搜索: {}", e.getMessage());
+            return performFallbackKeywordSearch(searchRequest);
+        }
+    }
+
+    /**
+     * 降级搜索 - 当Elasticsearch不可用时使用数据库搜索
+     */
+    private List<DocumentResponseDto> performFallbackKeywordSearch(SearchRequest searchRequest) {
         String queryText = searchRequest.getQueryText().toLowerCase();
 
         // 搜索标题和内容匹配的文档
@@ -112,44 +230,78 @@ public class SearchService {
     }
 
     /**
-     * 语义搜索（暂时使用关键词搜索实现，后续可以集成向量搜索）
+     * 转换Elasticsearch结果为业务DTO
      */
-    private List<DocumentResponseDto> performSemanticSearch(SearchRequestDto searchRequest) {
-        // TODO: 后续集成向量搜索引擎
-        // 目前先使用关键词搜索作为替代
-        log.info("语义搜索暂时使用关键词搜索实现: {}", searchRequest.getQueryText());
-        return performKeywordSearch(searchRequest);
+    private List<DocumentResponseDto> convertElasticsearchResults(List<DocumentIndex> elasticsearchResults) {
+        List<DocumentResponseDto> results = new ArrayList<>();
+        
+        for (DocumentIndex docIndex : elasticsearchResults) {
+            // 根据Elasticsearch文档ID查找数据库中的完整文档信息
+            try {
+                Long documentId = Long.parseLong(docIndex.getId());
+                Document document = documentRepository.findById(documentId).orElse(null);
+                
+                if (document != null && document.getStatus() == Document.Status.INDEXED) {
+                    results.add(new DocumentResponseDto(document));
+                }
+            } catch (NumberFormatException e) {
+                log.warn("无效的文档ID格式: {}", docIndex.getId());
+            }
+        }
+        
+        return results;
     }
 
     /**
-     * 混合搜索
+     * 获取当前用户的空间ID（权限控制）
      */
-    private List<DocumentResponseDto> performHybridSearch(SearchRequestDto searchRequest) {
-        // 结合关键词搜索和语义搜索的结果
-        List<DocumentResponseDto> keywordResults = performKeywordSearch(searchRequest);
-        List<DocumentResponseDto> semanticResults = performSemanticSearch(searchRequest);
+    private String getCurrentUserSpaceId() {
+        // TODO: 实现基于用户权限的空间ID获取
+        // 暂时返回null表示不限制空间
+        return null;
+    }
 
-        // 合并并去重结果
-        return keywordResults.stream()
-                .collect(Collectors.toList());
+    /**
+     * 获取当前用户可访问的渠道列表（权限控制）
+     */
+    private List<String> getCurrentUserChannels() {
+        // TODO: 实现基于用户权限的渠道列表获取
+        // 暂时返回null表示不限制渠道
+        return null;
     }
 
     /**
      * 记录搜索日志
      */
-    private void recordSearchLog(SearchRequestDto searchRequest, int resultCount, int responseTime) {
+    private void recordSearchLog(SearchRequest searchRequest, int resultCount, int responseTime, String searchType) {
         try {
             Long userId = getCurrentUserIdOrNull();
 
             SearchLog searchLog = new SearchLog();
-            searchLog.setQueryText(searchRequest.getQueryText());
+            searchLog.setQueryText(searchRequest.getQuery());
             searchLog.setUserId(userId);
-            searchLog.setSearchType(searchRequest.getSearchType());
+            
+            // 将字符串转换为SearchLog.SearchType枚举
+            SearchLog.SearchType logSearchType;
+            switch (searchType.toLowerCase()) {
+                case "keyword":
+                    logSearchType = SearchLog.SearchType.KEYWORD;
+                    break;
+                case "semantic":
+                case "vector":
+                    logSearchType = SearchLog.SearchType.SEMANTIC;
+                    break;
+                case "hybrid":
+                default:
+                    logSearchType = SearchLog.SearchType.HYBRID;
+                    break;
+            }
+            searchLog.setSearchType(logSearchType);
             searchLog.setResultCount(resultCount);
             searchLog.setResponseTimeMs(responseTime);
 
             searchLogRepository.save(searchLog);
-            log.info("搜索日志记录成功: {} - {} 条结果", searchRequest.getQueryText(), resultCount);
+            log.info("搜索日志记录成功: {} - {} 条结果", searchRequest.getQuery(), resultCount);
         } catch (Exception e) {
             log.warn("搜索日志记录失败", e);
             // 不抛出异常，避免影响搜索功能

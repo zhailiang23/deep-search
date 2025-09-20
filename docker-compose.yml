@@ -34,10 +34,22 @@ services:
       DB_PASSWORD: deep_search_pass
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/deep_search?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       JWT_SECRET: mySecretKey1234567890abcdef1234567890abcdef
+      # Redis配置
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: redispass
+      # Elasticsearch配置
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+      ELASTICSEARCH_SCHEME: http
     ports:
       - "8080:8080"
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
     networks:
       - deep-search-network
@@ -49,8 +61,64 @@ services:
       start_period: 60s
     restart: unless-stopped
 
+  # Redis缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: deep-search-redis
+    command: redis-server --appendonly yes --requirepass redispass
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - deep-search-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      timeout: 3s
+      retries: 5
+      interval: 5s
+      start_period: 10s
+
+  # Elasticsearch搜索引擎服务（带IK分词器）
+  elasticsearch:
+    build:
+      context: .
+      dockerfile: docker/elasticsearch/Dockerfile
+    container_name: deep-search-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - deep-search-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      timeout: 10s
+      retries: 10
+      interval: 10s
+      start_period: 30s
+
 volumes:
   mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  elasticsearch_data:
     driver: local
 
 networks:

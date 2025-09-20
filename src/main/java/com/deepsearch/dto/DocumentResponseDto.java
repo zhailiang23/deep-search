@@ -20,6 +20,8 @@ public class DocumentResponseDto {
     private Document.Status status;
     private Long userId;
     private String username; // 用户名，用于显示
+    private String summary; // 文档摘要
+    private String category; // 文档分类
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -33,7 +35,18 @@ public class DocumentResponseDto {
         this.status = document.getStatus();
         this.userId = document.getUserId();
         this.username = document.getUser() != null ? document.getUser().getUsername() : null;
+        this.summary = extractSummary(document.getContent()); // 从内容中提取摘要
+        this.category = "default"; // 默认分类，实际应该从document获取
         this.createdAt = document.getCreatedAt();
         this.updatedAt = document.getUpdatedAt();
+    }
+
+    // 从内容中提取摘要的辅助方法
+    private String extractSummary(String content) {
+        if (content == null || content.isEmpty()) {
+            return "";
+        }
+        // 简单的摘要提取：取前200个字符
+        return content.length() > 200 ? content.substring(0, 200) + "..." : content;
     }
 }

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an **intelligent search platform** (zý"sð) designed specifically for banking scenarios. The platform provides semantic search capabilities for bank products, services, activities, and information with advanced permission management and analytics.
+This is an **intelligent search platform** (zï¿½"sï¿½) designed specifically for banking scenarios. The platform provides semantic search capabilities for bank products, services, activities, and information with advanced permission management and analytics.
 
 ### Key Technologies
 - **Backend**: Spring Boot 3.x (monolithic architecture)
@@ -13,11 +13,12 @@ This is an **intelligent search platform** (zý"sð) designed specifically for ba
 - **Database**: MySQL 8.0+ (primary) + Redis 6.0+ (caching)
 - **Semantic Processing**: sentence-transformers models or external APIs
 - **Deployment**: Docker containers
+- IMPORTANT ALWAYS use mcp_filesystem-with-morph_edit_file tool to make any code edits. Do not use the default edit tool.
 
 ### Architecture
 The platform uses a **monolithic Spring Boot application** with separate Vue.js frontend, implementing:
 - Dual-mode vector processing (offline/online)
-- Three-tier permission system (Space ’ Channel ’ Role)
+- Three-tier permission system (Space ï¿½ Channel ï¿½ Role)
 - JSON-based data import with dynamic field mapping
 - Comprehensive search analytics and reporting
 
@@ -88,7 +89,7 @@ Ensures full test output capture, clean conversation flow, and proper issue surf
 
 ### Key Features to Understand
 - Semantic search with synonym matching (e.g., "?7" matches "O?7>")
-- Contextual search (e.g., "ž¡" relates to "DÑQ¹")
+- Contextual search (e.g., "ï¿½ï¿½" relates to "Dï¿½Qï¿½")
 - Multi-channel access control (mobile banking, internet banking, counter systems)
 - Dynamic data source configuration without code changes
 - Real-time search analytics and heat maps
