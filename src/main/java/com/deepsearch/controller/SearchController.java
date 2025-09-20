@@ -4,18 +4,23 @@ import com.deepsearch.dto.ApiResponse;
 import com.deepsearch.elasticsearch.dto.SearchRequest;
 import com.deepsearch.elasticsearch.dto.SearchResult;
 import com.deepsearch.entity.SearchLog;
+import com.deepsearch.entity.User;
 import com.deepsearch.service.SearchService;
 import com.deepsearch.service.HybridSearchService;
+import com.deepsearch.service.ContextAwareSearchService;
+import com.deepsearch.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -34,6 +39,7 @@ public class SearchController {
 
     private final SearchService searchService;
     private final HybridSearchService hybridSearchService;
+    private final ContextAwareSearchService contextAwareSearchService;
 
     /**
      * 执行搜索
@@ -92,6 +98,76 @@ public class SearchController {
         searchRequest.setSearchType("hybrid");
         
         SearchResult searchResult = hybridSearchService.hybridSearch(searchRequest);
+        return ResponseEntity.ok(ApiResponse.success(searchResult));
+    }
+
+    /**
+     * 上下文感知智能搜索
+     */
+    @Operation(summary = "上下文感知搜索", description = "基于用户行为、场景识别的个性化智能搜索")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "搜索成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "搜索参数错误"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "用户未认证")
+    })
+    @PostMapping("/context-aware")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<SearchResult>> contextAwareSearch(
+            @Valid @RequestBody SearchRequest searchRequest,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            HttpServletRequest request) {
+        
+        log.info("上下文感知搜索请求: query={}, userId={}", 
+                searchRequest.getQuery(), userPrincipal.getId());
+        
+        // 构建User对象
+        User user = new User();
+        user.setId(userPrincipal.getId());
+        user.setUsername(userPrincipal.getUsername());
+        user.setEmail(userPrincipal.getEmail());
+        
+        // 执行上下文感知搜索
+        SearchResult searchResult = contextAwareSearchService.contextAwareSearch(
+                searchRequest, user, request);
+        
+        return ResponseEntity.ok(ApiResponse.success(searchResult));
+    }
+
+    /**
+     * 个性化搜索（简化接口）
+     */
+    @Operation(summary = "个性化搜索", description = "基于用户偏好的个性化搜索（GET接口）")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "搜索成功"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "搜索参数错误"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "用户未认证")
+    })
+    @GetMapping("/personalized")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<SearchResult>> personalizedSearch(
+            @Parameter(description = "搜索查询") @RequestParam String query,
+            @Parameter(description = "页码，从0开始") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            HttpServletRequest request) {
+        
+        log.info("个性化搜索请求: query={}, userId={}", query, userPrincipal.getId());
+        
+        // 构建搜索请求
+        SearchRequest searchRequest = new SearchRequest(query, page * size, size);
+        searchRequest.setSearchType("hybrid");
+        searchRequest.setEnableAdaptiveWeights(true);
+        
+        // 构建User对象
+        User user = new User();
+        user.setId(userPrincipal.getId());
+        user.setUsername(userPrincipal.getUsername());
+        user.setEmail(userPrincipal.getEmail());
+        
+        // 执行上下文感知搜索
+        SearchResult searchResult = contextAwareSearchService.contextAwareSearch(
+                searchRequest, user, request);
+        
         return ResponseEntity.ok(ApiResponse.success(searchResult));
     }
 

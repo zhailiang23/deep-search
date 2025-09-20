@@ -41,6 +41,9 @@ public class DocumentIndex {
     @JsonProperty("relevance_boost")
     private Float relevanceBoost = 1.0f;
 
+    @JsonProperty("score")
+    private Float score;
+
     private Map<String, Object> metadata;
 
     // Default constructor
@@ -176,6 +179,14 @@ public class DocumentIndex {
 
     public void setRelevanceBoost(Float relevanceBoost) {
         this.relevanceBoost = relevanceBoost;
+    }
+
+    public Float getScore() {
+        return score;
+    }
+
+    public void setScore(Float score) {
+        this.score = score;
     }
 
     public Map<String, Object> getMetadata() {

@@ -89,6 +89,15 @@ public class SearchResult {
     @Schema(description = "错误信息或警告")
     private List<String> warnings;
 
+    @Schema(description = "扩展查询列表")
+    private List<String> expandedQueries;
+
+    @Schema(description = "查询类型", example = "PRODUCT_QUERY")
+    private String queryType;
+
+    @Schema(description = "元数据信息")
+    private Map<String, Object> metadata;
+
     // 主要构造方法
     public SearchResult(String query, List<DocumentIndex> documents, int totalResults,
                        int pageNumber, int pageSize, long responseTimeMs, String searchType) {
@@ -132,6 +141,37 @@ public class SearchResult {
             this.aggregations = new java.util.HashMap<>();
         }
         this.aggregations.put(name, value);
+    }
+
+    /**
+     * 设置元数据信息
+     */
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
+    }
+
+    /**
+     * 添加元数据信息
+     */
+    public void addMetadata(String key, Object value) {
+        if (this.metadata == null) {
+            this.metadata = new java.util.HashMap<>();
+        }
+        this.metadata.put(key, value);
+    }
+
+    /**
+     * 获取总结果数（别名方法，兼容性）
+     */
+    public int getTotalHits() {
+        return totalResults;
+    }
+
+    /**
+     * 获取响应时间（别名方法，兼容性）
+     */
+    public long getResponseTime() {
+        return responseTimeMs;
     }
 
     /**

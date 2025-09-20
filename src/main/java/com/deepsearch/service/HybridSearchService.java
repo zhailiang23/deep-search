@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 /**
  * 混合搜索服务 - 实现关键词搜索与语义搜索的并行执行与结果合并
+ * 集成同义词扩展和查询优化功能
  */
 @Service
 @RequiredArgsConstructor
@@ -29,6 +31,8 @@ public class HybridSearchService {
 
     private final ElasticsearchSearchService elasticsearchService;
     private final SearchRelevanceService relevanceService;
+    private final SynonymService synonymService;
+    private final QueryExpansionService queryExpansionService;
 
     // 用于并行搜索的线程池
     private final ExecutorService searchExecutor = Executors.newFixedThreadPool(4);
@@ -38,7 +42,7 @@ public class HybridSearchService {
     private static final float DEFAULT_VECTOR_WEIGHT = 2.0f;
 
     /**
-     * 执行混合搜索
+     * 执行混合搜索（带查询扩展）
      *
      * @param searchRequest 搜索请求参数
      * @return 搜索结果
@@ -47,44 +51,56 @@ public class HybridSearchService {
         long startTime = System.currentTimeMillis();
 
         try {
+            String originalQuery = searchRequest.getQuery();
             log.info("开始执行混合搜索: query={}, weights={}/{}",
-                searchRequest.getQuery(),
+                originalQuery,
                 searchRequest.getKeywordWeight(),
                 searchRequest.getVectorWeight());
 
-            // 1. 并行执行关键词和语义搜索
+            // 1. 查询扩展处理
+            QueryExpansionService.QueryExpansionResult expansionResult = 
+                queryExpansionService.expandQuery(originalQuery, buildContextHints(searchRequest));
+            
+            Set<String> expandedQueries = expansionResult.getAllTerms();
+            log.debug("查询扩展完成: '{}' -> {} 个扩展查询", originalQuery, expandedQueries.size());
+
+            // 2. 并行执行关键词和语义搜索
             CompletableFuture<List<DocumentIndex>> keywordResults =
-                CompletableFuture.supplyAsync(() -> performKeywordSearch(searchRequest), searchExecutor);
+                CompletableFuture.supplyAsync(() -> performKeywordSearch(searchRequest, expandedQueries), searchExecutor);
 
             CompletableFuture<List<DocumentIndex>> semanticResults =
-                CompletableFuture.supplyAsync(() -> performSemanticSearch(searchRequest), searchExecutor);
+                CompletableFuture.supplyAsync(() -> performSemanticSearch(searchRequest, expandedQueries), searchExecutor);
 
-            // 2. 等待两个搜索完成并获取结果
+            // 3. 等待两个搜索完成并获取结果
             List<DocumentIndex> keywordDocs = keywordResults.join();
             List<DocumentIndex> semanticDocs = semanticResults.join();
 
             log.info("并行搜索完成: 关键词结果={}, 语义结果={}", keywordDocs.size(), semanticDocs.size());
 
-            // 3. 合并和重排序结果
+            // 4. 合并和重排序结果
             SearchWeights weights = buildSearchWeights(searchRequest);
             List<DocumentIndex> mergedResults = relevanceService.mergeAndRank(
                 keywordDocs, semanticDocs, weights);
 
-            // 4. 应用分页
+            // 5. 应用分页
             List<DocumentIndex> pagedResults = applyPagination(mergedResults, searchRequest);
 
             long responseTime = System.currentTimeMillis() - startTime;
 
-            // 5. 构建SearchResult响应
+            // 6. 构建SearchResult响应
             SearchResult result = new SearchResult(
-                searchRequest.getQuery(),
+                originalQuery,
                 pagedResults,
                 mergedResults.size(),
                 searchRequest.getFrom() / searchRequest.getSize(),
                 searchRequest.getSize(),
                 responseTime,
-                "hybrid"
+                "hybrid_with_expansion"
             );
+
+            // 添加扩展信息到结果中
+            result.setExpandedQueries(new ArrayList<>(expandedQueries));
+            result.setQueryType(expansionResult.getQueryType().toString());
 
             log.info("混合搜索完成: 总结果={}, 响应时间={}ms", mergedResults.size(), responseTime);
             return result;
@@ -95,6 +111,136 @@ public class HybridSearchService {
             // 降级到单一搜索策略
             return performFallbackSearch(searchRequest, startTime);
         }
+    }
+
+    /**
+     * 执行关键词搜索（支持查询扩展）
+     */
+    private List<DocumentIndex> performKeywordSearch(SearchRequest searchRequest, Set<String> expandedQueries) {
+        try {
+            log.debug("执行关键词搜索: 原始查询={}, 扩展查询数={}", 
+                     searchRequest.getQuery(), expandedQueries.size());
+
+            List<DocumentIndex> allResults = new ArrayList<>();
+
+            // 对每个扩展查询执行搜索
+            for (String query : expandedQueries) {
+                try {
+                    List<DocumentIndex> results = elasticsearchService.keywordSearch(
+                        query,
+                        searchRequest.getSpaceId(),
+                        searchRequest.getChannels(),
+                        0,
+                        Math.max(50, searchRequest.getSize() * 2) // 每个查询获取较少结果
+                    );
+                    
+                    // 为扩展查询的结果添加权重调整
+                    if (!query.equals(searchRequest.getQuery())) {
+                        // 对非原始查询的结果降低权重
+                        results.forEach(doc -> doc.setScore(doc.getScore() * 0.8f));
+                    }
+                    
+                    allResults.addAll(results);
+                } catch (IOException e) {
+                    log.warn("扩展查询搜索失败: {}", query, e);
+                }
+            }
+
+            // 去重和排序
+            return deduplicateAndSort(allResults);
+
+        } catch (Exception e) {
+            log.warn("关键词搜索失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 执行语义搜索（支持查询扩展）
+     */
+    private List<DocumentIndex> performSemanticSearch(SearchRequest searchRequest, Set<String> expandedQueries) {
+        try {
+            log.debug("执行语义搜索: 原始查询={}, 扩展查询数={}", 
+                     searchRequest.getQuery(), expandedQueries.size());
+
+            List<DocumentIndex> allResults = new ArrayList<>();
+
+            // 对主要查询词执行语义搜索
+            String primaryQuery = buildCombinedQuery(expandedQueries, searchRequest.getQuery());
+            
+            List<DocumentIndex> results = elasticsearchService.vectorSearch(
+                primaryQuery,
+                searchRequest.getSpaceId(),
+                searchRequest.getChannels(),
+                0,
+                Math.max(100, searchRequest.getSize() * 3)
+            );
+            
+            allResults.addAll(results);
+
+            return deduplicateAndSort(allResults);
+
+        } catch (IOException e) {
+            log.warn("语义搜索失败: {}", e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 构建上下文提示信息
+     */
+    private Map<String, Object> buildContextHints(SearchRequest searchRequest) {
+        Map<String, Object> contextHints = new HashMap<>();
+        
+        if (searchRequest.getSpaceId() != null) {
+            contextHints.put("spaceId", searchRequest.getSpaceId());
+        }
+        
+        if (searchRequest.getChannels() != null && !searchRequest.getChannels().isEmpty()) {
+            contextHints.put("channels", searchRequest.getChannels());
+        }
+        
+        // 可以添加更多上下文信息，如用户历史、当前页面等
+        
+        return contextHints;
+    }
+
+    /**
+     * 构建组合查询字符串
+     */
+    private String buildCombinedQuery(Set<String> expandedQueries, String originalQuery) {
+        // 将扩展查询合并为一个查询字符串，原始查询权重最高
+        List<String> queryList = new ArrayList<>();
+        queryList.add(originalQuery); // 原始查询放在首位
+        
+        expandedQueries.stream()
+            .filter(q -> !q.equals(originalQuery))
+            .limit(5) // 限制扩展查询数量
+            .forEach(queryList::add);
+            
+        return String.join(" ", queryList);
+    }
+
+    /**
+     * 去重和排序
+     */
+    private List<DocumentIndex> deduplicateAndSort(List<DocumentIndex> results) {
+        // 使用文档ID去重，保留评分最高的
+        Map<String, DocumentIndex> uniqueResults = new HashMap<>();
+        
+        for (DocumentIndex doc : results) {
+            String docId = doc.getId();
+            if (!uniqueResults.containsKey(docId) || 
+                doc.getScore() > uniqueResults.get(docId).getScore()) {
+                uniqueResults.put(docId, doc);
+            }
+        }
+        
+        // 按评分降序排序
+        return uniqueResults.values()
+            .stream()
+            .sorted((a, b) -> Float.compare(b.getScore(), a.getScore()))
+            .collect(Collectors.toList());
     }
 
     /**

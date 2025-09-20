@@ -156,4 +156,9 @@ public interface SearchLogRepository extends JpaRepository<SearchLog, Long> {
            "AND ABS(TIMESTAMPDIFF(MINUTE, s1.createdAt, s2.createdAt)) <= 30 " +
            "ORDER BY s2.createdAt DESC")
     List<String> findRelatedQueries(@Param("queryText") String queryText, Pageable pageable);
+
+    /**
+     * 根据用户ID查找搜索记录（按创建时间倒序）
+     */
+    List<SearchLog> findByUserIdOrderByCreatedAtDesc(Long userId);
 }
