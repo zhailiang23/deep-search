@@ -58,11 +58,11 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "请求参数错误")
     })
     @PostMapping("/login")
-    public ResponseEntity<com.deepsearch.dto.ApiResponse<String>> loginUser(
+    public ResponseEntity<com.deepsearch.dto.ApiResponse<UserLoginResponseDto>> loginUser(
             @Valid @RequestBody UserLoginDto loginDto) {
         log.info("用户登录请求: {}", loginDto.getUsernameOrEmail());
-        String jwt = userService.authenticateUser(loginDto);
-        return ResponseEntity.ok(com.deepsearch.dto.ApiResponse.success("登录成功", jwt));
+        UserLoginResponseDto loginResponse = userService.authenticateUser(loginDto);
+        return ResponseEntity.ok(com.deepsearch.dto.ApiResponse.success("登录成功", loginResponse));
     }
 
     /**
@@ -143,8 +143,9 @@ public class UserController {
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<com.deepsearch.dto.ApiResponse<UserResponseDto>> updateCurrentUser(
             @Parameter(description = "新邮箱地址") @RequestParam String email) {
-        UserResponseDto currentUser = userService.getCurrentUser();
-        UserResponseDto userResponse = userService.updateUser(currentUser.getId(), email);
+        UserUpdateDto updateDto = new UserUpdateDto();
+        updateDto.setEmail(email);
+        UserResponseDto userResponse = userService.updateUserProfile(updateDto);
         return ResponseEntity.ok(com.deepsearch.dto.ApiResponse.success("用户信息更新成功", userResponse));
     }
 
@@ -193,5 +194,22 @@ public class UserController {
         boolean available = userService.isEmailAvailable(email);
         return ResponseEntity.ok(com.deepsearch.dto.ApiResponse.success(
                 available ? "邮箱可用" : "邮箱已被使用", available));
+    }
+
+    /**
+     * 更新用户个人资料
+     */
+    @Operation(summary = "更新用户个人资料", description = "更新用户的个人资料信息")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "更新成功"),
+            @ApiResponse(responseCode = "409", description = "邮箱已被使用"),
+            @ApiResponse(responseCode = "401", description = "用户未认证")
+    })
+    @PutMapping("/profile")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<com.deepsearch.dto.ApiResponse<UserResponseDto>> updateUserProfile(
+            @Valid @RequestBody UserUpdateDto updateDto) {
+        UserResponseDto userResponse = userService.updateUserProfile(updateDto);
+        return ResponseEntity.ok(com.deepsearch.dto.ApiResponse.success("个人资料更新成功", userResponse));
     }
 }

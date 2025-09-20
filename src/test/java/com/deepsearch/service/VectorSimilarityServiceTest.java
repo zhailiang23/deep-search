@@ -25,6 +25,7 @@ import static org.mockito.Mockito.*;
  * 测试向量相似度服务的各项功能
  */
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings({"unchecked", "rawtypes"})
 class VectorSimilarityServiceTest {
 
     @Mock
@@ -261,11 +262,11 @@ class VectorSimilarityServiceTest {
         List<Long> documentIds = Arrays.asList(1L, 2L, 3L);
 
         when(documentVectorRepository.findByDocumentId(1L))
-            .thenReturn(Optional.of(testDocumentVector1));
+            .thenReturn(Arrays.asList(testDocumentVector1));
         when(documentVectorRepository.findByDocumentId(2L))
-            .thenReturn(Optional.of(testDocumentVector2));
+            .thenReturn(Arrays.asList(testDocumentVector2));
         when(documentVectorRepository.findByDocumentId(3L))
-            .thenReturn(Optional.empty()); // 模拟不存在的文档
+            .thenReturn(Collections.emptyList()); // 模拟不存在的文档
 
         // When
         List<SimilarityResult> results = vectorSimilarityService.calculateSimilarities(
@@ -310,9 +311,9 @@ class VectorSimilarityServiceTest {
         when(documentVectorRepository.findAll()).thenReturn(candidateVectors);
 
         when(documentVectorRepository.findByDocumentId(1L))
-            .thenReturn(Optional.of(testDocumentVector1));
+            .thenReturn(Arrays.asList(testDocumentVector1));
         when(documentVectorRepository.findByDocumentId(2L))
-            .thenReturn(Optional.of(testDocumentVector2));
+            .thenReturn(Arrays.asList(testDocumentVector2));
 
         // When
         List<SimilarityResult> results = vectorSimilarityService.approximateNearestNeighborSearch(

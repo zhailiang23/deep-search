@@ -13,7 +13,6 @@ This is an **intelligent search platform** (z�"s�) designed specifically fo
 - **Database**: MySQL 8.0+ (primary) + Redis 6.0+ (caching)
 - **Semantic Processing**: sentence-transformers models or external APIs
 - **Deployment**: Docker containers
-- IMPORTANT ALWAYS use mcp_filesystem-with-morph_edit_file tool to make any code edits. Do not use the default edit tool.
 
 ### Architecture
 The platform uses a **monolithic Spring Boot application** with separate Vue.js frontend, implementing:

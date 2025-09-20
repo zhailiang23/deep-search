@@ -41,6 +41,7 @@ import static org.mockito.Mockito.*;
  * 文档服务单元测试
  */
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings({"unchecked", "rawtypes"})
 class DocumentServiceTest {
 
     @Mock
@@ -100,7 +101,7 @@ class DocumentServiceTest {
         Collection<? extends GrantedAuthority> authorities = Arrays.stream(roles)
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                 .collect(Collectors.toList());
-        when(authentication.getAuthorities()).thenReturn(authorities);
+        when(authentication.getAuthorities()).thenReturn((Collection) authorities);
 
         SecurityContextHolder.setContext(securityContext);
     }

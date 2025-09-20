@@ -17,6 +17,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.*;
  * 搜索安全服务测试
  */
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings({"unchecked", "rawtypes", "cast"})
 class SearchSecurityServiceTest {
 
     @Mock
@@ -141,7 +143,7 @@ class SearchSecurityServiceTest {
         // 准备mock - 管理员权限
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getAuthorities()).thenReturn(
-            Collections.<GrantedAuthority>singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
+            (Collection) Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
         );
 
         // 执行测试
@@ -156,7 +158,7 @@ class SearchSecurityServiceTest {
         // 准备mock - 普通用户权限
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getAuthorities()).thenReturn(
-            Collections.<GrantedAuthority>singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+            (Collection) Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
         );
 
         // 执行测试
@@ -201,7 +203,7 @@ class SearchSecurityServiceTest {
         // 准备mock - 管理员
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getAuthorities()).thenReturn(
-            Collections.<GrantedAuthority>singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
+            (Collection) Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
         );
 
         // 执行测试
@@ -216,7 +218,7 @@ class SearchSecurityServiceTest {
         // 准备mock - 同一用户
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getAuthorities()).thenReturn(
-            Collections.<GrantedAuthority>singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+            (Collection) Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
         );
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("testuser");
@@ -234,7 +236,7 @@ class SearchSecurityServiceTest {
         // 准备mock - 不同用户
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getAuthorities()).thenReturn(
-            Collections.<GrantedAuthority>singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+            (Collection) Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
         );
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("testuser");
@@ -252,7 +254,7 @@ class SearchSecurityServiceTest {
         // 准备mock - 管理员
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getAuthorities()).thenReturn(
-            Collections.<GrantedAuthority>singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
+            (Collection) Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
         );
 
         // 执行测试 - 应该不抛出异常
@@ -266,7 +268,7 @@ class SearchSecurityServiceTest {
         // 准备mock - 普通用户访问其他用户数据
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getAuthorities()).thenReturn(
-            Collections.<GrantedAuthority>singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+            (Collection) Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
         );
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("testuser");
@@ -283,7 +285,7 @@ class SearchSecurityServiceTest {
         // 准备mock - 管理员
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getAuthorities()).thenReturn(
-            Collections.<GrantedAuthority>singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
+            (Collection) Collections.singletonList(new SimpleGrantedAuthority("ROLE_ADMIN"))
         );
 
         // 执行测试 - 应该不抛出异常
@@ -297,7 +299,7 @@ class SearchSecurityServiceTest {
         // 准备mock - 普通用户
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.getAuthorities()).thenReturn(
-            Collections.<GrantedAuthority>singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+            (Collection) Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
         );
 
         // 执行测试并验证异常

@@ -6,6 +6,8 @@ import com.deepsearch.dto.UserResponseDto;
 import com.deepsearch.entity.User;
 import com.deepsearch.exception.ConflictException;
 import com.deepsearch.exception.ResourceNotFoundException;
+import com.deepsearch.dto.UserLoginResponseDto;
+import com.deepsearch.dto.UserUpdateDto;
 import com.deepsearch.exception.BadRequestException;
 import com.deepsearch.repository.UserRepository;
 import com.deepsearch.security.JwtTokenProvider;
@@ -66,7 +68,7 @@ public class UserService {
     /**
      * 用户登录
      */
-    public String authenticateUser(UserLoginDto loginDto) {
+    public UserLoginResponseDto authenticateUser(UserLoginDto loginDto) {
         // 认证用户
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -81,7 +83,8 @@ public class UserService {
         String jwt = jwtTokenProvider.generateToken(authentication);
         log.info("用户登录成功: {}", loginDto.getUsernameOrEmail());
 
-        return jwt;
+        UserResponseDto userDto = getCurrentUser();
+        return new UserLoginResponseDto(jwt, userDto);
     }
 
     /**
@@ -139,6 +142,35 @@ public class UserService {
     }
 
     /**
+     * 更新用户个人资料
+     */
+    public UserResponseDto updateUserProfile(UserUpdateDto updateDto) {
+        UserResponseDto currentUser = getCurrentUser();
+        Long userId = currentUser.getId();
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+
+        // 更新邮箱
+        if (updateDto.getEmail() != null && !user.getEmail().equals(updateDto.getEmail())) {
+            if (userRepository.existsByEmail(updateDto.getEmail())) {
+                throw new ConflictException("邮箱已被其他用户使用: " + updateDto.getEmail());
+            }
+            user.setEmail(updateDto.getEmail());
+        }
+
+        // 更新密码
+        if (updateDto.getPassword() != null) {
+            user.setPasswordHash(passwordEncoder.encode(updateDto.getPassword()));
+        }
+
+        User updatedUser = userRepository.save(user);
+        log.info("用户个人资料更新成功: {}", user.getUsername());
+
+        return new UserResponseDto(updatedUser);
+    }
+
+    /**
      * 删除用户（仅管理员）
      */
     public void deleteUser(Long userId) {
@@ -177,24 +209,5 @@ public class UserService {
 
         String username = authentication.getName();
         return getUserByUsername(username);
-    }
-
-    /**
-     * 更新用户信息
-     */
-    public UserResponseDto updateUser(Long userId, String email) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
-
-        // 检查邮箱是否被其他用户使用
-        if (!user.getEmail().equals(email) && userRepository.existsByEmail(email)) {
-            throw new ConflictException("邮箱已被其他用户使用: " + email);
-        }
-
-        user.setEmail(email);
-        User updatedUser = userRepository.save(user);
-        log.info("用户信息更新成功: {}", user.getUsername());
-
-        return new UserResponseDto(updatedUser);
     }
 }

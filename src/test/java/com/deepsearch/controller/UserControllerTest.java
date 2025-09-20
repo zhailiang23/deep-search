@@ -286,7 +286,7 @@ class UserControllerTest {
         String newEmail = "newemail@example.com";
         userResponseDto.setEmail(newEmail);
         when(userService.getCurrentUser()).thenReturn(userResponseDto);
-        when(userService.updateUser(eq(1L), eq(newEmail))).thenReturn(userResponseDto);
+        when(userService.updateUserProfile(any(UserUpdateDto.class))).thenReturn(userResponseDto);
 
         // When & Then
         mockMvc.perform(put("/api/users/me")

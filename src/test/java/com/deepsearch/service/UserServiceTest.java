@@ -2,6 +2,10 @@ package com.deepsearch.service;
 
 import com.deepsearch.dto.UserRegistrationDto;
 import com.deepsearch.dto.UserLoginDto;
+import com.deepsearch.dto.UserUpdateDto;
+
+import com.deepsearch.dto.UserLoginResponseDto;
+
 import com.deepsearch.dto.UserResponseDto;
 import com.deepsearch.entity.User;
 import com.deepsearch.exception.ConflictException;
@@ -137,10 +141,10 @@ class UserServiceTest {
         when(jwtTokenProvider.generateToken(mockAuthentication)).thenReturn("jwt-token");
 
         // When
-        String result = userService.authenticateUser(loginDto);
+        UserLoginResponseDto result = userService.authenticateUser(loginDto);
 
         // Then
-        assertEquals("jwt-token", result);
+        assertEquals("jwt-token", result.getToken());
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(jwtTokenProvider).generateToken(mockAuthentication);
     }
@@ -314,7 +318,7 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
         // When
-        UserResponseDto result = userService.updateUser(testUser.getId(), newEmail);
+        UserResponseDto result = userService.updateUserProfile(createUpdateDto(newEmail));
 
         // Then
         assertNotNull(result);
@@ -332,11 +336,17 @@ class UserServiceTest {
 
         // When & Then
         ConflictException exception = assertThrows(ConflictException.class,
-                () -> userService.updateUser(testUser.getId(), conflictEmail));
+                () -> userService.updateUserProfile(createUpdateDto(conflictEmail)));
 
         assertTrue(exception.getMessage().contains("邮箱已被其他用户使用"));
         verify(userRepository).findById(testUser.getId());
         verify(userRepository).existsByEmail(conflictEmail);
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    private UserUpdateDto createUpdateDto(String email) {
+        UserUpdateDto updateDto = new UserUpdateDto();
+        updateDto.setEmail(email);
+        return updateDto;
     }
 }

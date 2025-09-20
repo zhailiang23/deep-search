@@ -351,7 +351,7 @@ class SemanticSearchServiceTest {
     }
 
     @Test
-    void testSearchWithContext_SpaceAndChannelFiltering() {
+    void testSearchWithContext_SpaceAndChannelFiltering() throws Exception {
         // Given
         String query = "银行卡申请";
         SearchContext context = new SearchContext();
@@ -395,7 +395,6 @@ class SemanticSearchServiceTest {
         document.setId(id);
         document.setTitle(title);
         document.setContent("这是一个关于银行服务的测试文档");
-        document.setCategory("银行服务");
         document.setStatus(Document.Status.INDEXED);
         document.setCreatedAt(LocalDateTime.now());
         document.setUpdatedAt(LocalDateTime.now());
