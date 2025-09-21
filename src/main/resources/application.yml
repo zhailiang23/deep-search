@@ -1,61 +1,15 @@
-server:
-  port: 8080
-
 spring:
   application:
-    name: deep-search
+    name: vector-processing-engine
+  profiles:
+    active: vector
 
-  datasource:
-    url: jdbc:mysql://localhost:3306/deep_search?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:password}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        format_sql: true
-        enable_lazy_load_no_trans: true
-    open-in-view: false
-
-  security:
-    jwt:
-      secret: ${JWT_SECRET:mySecretKey1234567890abcdef1234567890abcdef}
-      expiration: 86400000  # 24 hours in milliseconds
-
-  jackson:
-    default-property-inclusion: non_null
-    serialization:
-      write-dates-as-timestamps: false
-
-  task:
-    scheduling:
-      pool:
-        size: 5
-
-  # Redis 配置
-  redis:
-    host: ${SPRING_REDIS_HOST:localhost}
-    port: ${SPRING_REDIS_PORT:6379}
-    password: ${SPRING_REDIS_PASSWORD:}
-    database: 0
-    timeout: 10s
-    lettuce:
-      pool:
-        max-active: 10
-        max-idle: 8
-        min-idle: 2
-        max-wait: -1ms
+logging:
+  level:
+    com.deepsearch.vector: DEBUG
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 management:
   endpoints:
@@ -64,67 +18,4 @@ management:
         include: health,info,metrics
   endpoint:
     health:
-      show-details: when_authorized
-
-logging:
-  level:
-    com.deepsearch: INFO
-    com.deepsearch.vector: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.scheduling: INFO
-    org.hibernate.SQL: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    enabled: true
-
-# 向量处理配置
-vector-processing:
-  default-mode: AUTO_SWITCH
-
-  openai:
-    api-key: ${OPENAI_API_KEY:}
-    models:
-      small: text-embedding-3-small
-      large: text-embedding-3-large
-    rate-limit: 1000  # requests per minute
-
-  local-models:
-    bert:
-      model-path: ./models/sentence-transformer
-      max-sequence-length: 512
-
-  cache:
-    enabled: true
-    ttl: 24h
-    max-size: 10000
-
-  mode-switching:
-    auto-switch-enabled: true
-    cost-threshold-cents: 1000  # 每小时成本阈值
-    latency-threshold-ms: 3000  # 延迟阈值
-    queue-size-threshold: 100   # 队列长度阈值
-    load-threshold: 0.8         # 系统负载阈值
-
-  task-queue:
-    batch-size: 50
-    max-concurrent-tasks: 10
-    retry-delay-seconds: 60s
-    max-retries: 3
-
-# Elasticsearch 配置
-elasticsearch:
-  host: ${ELASTICSEARCH_HOST:localhost}
-  port: ${ELASTICSEARCH_PORT:9200}
-  scheme: ${ELASTICSEARCH_SCHEME:http}
-  username: ${ELASTICSEARCH_USERNAME:}
-  password: ${ELASTICSEARCH_PASSWORD:}
-  connection-timeout: ${ELASTICSEARCH_CONNECTION_TIMEOUT:10000}
-  socket-timeout: ${ELASTICSEARCH_SOCKET_TIMEOUT:30000}
-  max-connections: ${ELASTICSEARCH_MAX_CONNECTIONS:100}
-  max-connections-per-route: ${ELASTICSEARCH_MAX_CONNECTIONS_PER_ROUTE:10}
+      show-details: always

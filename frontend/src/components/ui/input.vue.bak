@@ -1,0 +1,230 @@
+<template>
+  <div class="relative">
+    <!-- 前置图标 -->
+    <div
+      v-if="$slots.prefix || prefixIcon"
+      class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+    >
+      <slot name="prefix">
+        <component :is="prefixIcon" v-if="prefixIcon" class="h-4 w-4" />
+      </slot>
+    </div>
+
+    <input
+      :id="id"
+      :type="type"
+      :class="cn(inputVariants({ size, error: !!error }), hasPrefix && 'pl-10', hasSuffix && 'pr-10', $attrs.class as string)"
+      :placeholder="placeholder"
+      :disabled="disabled"
+      :readonly="readonly"
+      :value="modelValue"
+      :autocomplete="autocomplete"
+      :maxlength="maxlength"
+      :minlength="minlength"
+      :pattern="pattern"
+      :required="required"
+      v-bind="$attrs"
+      @input="handleInput"
+      @change="handleChange"
+      @focus="handleFocus"
+      @blur="handleBlur"
+      @keydown="handleKeydown"
+    />
+
+    <!-- 后置图标 */
+    <div
+      v-if="$slots.suffix || suffixIcon || clearable"
+      class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+    >
+      <!-- 清空按钮 -->
+      <button
+        v-if="clearable && modelValue && !disabled && !readonly"
+        type="button"
+        class="hover:text-foreground transition-colors"
+        @click="handleClear"
+      >
+        <XIcon class="h-4 w-4" />
+      </button>
+
+      <slot name="suffix" v-else>
+        <component :is="suffixIcon" v-if="suffixIcon" class="h-4 w-4" />
+      </slot>
+    </div>
+
+    <!-- 字符计数 */
+    <div
+      v-if="showCount && maxlength"
+      class="absolute -bottom-5 right-0 text-xs text-muted-foreground"
+    >
+      {{ currentLength }}/{{ maxlength }}
+    </div>
+  </div>
+
+  <!-- 错误提示 -->
+  <div
+    v-if="error"
+    class="mt-1 text-sm text-destructive"
+  >
+    {{ error }}
+  </div>
+
+  <!-- 帮助文本 */
+  <div
+    v-if="$slots.help || help"
+    class="mt-1 text-sm text-muted-foreground"
+  >
+    <slot name="help">{{ help }}</slot>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, useSlots } from 'vue'
+import { cva, type VariantProps } from 'class-variance-authority'
+import { cn } from '@/lib/utils'
+import { XIcon } from 'lucide-vue-next'
+
+// 输入框变体配置
+const inputVariants = cva(
+  'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors',
+  {
+    variants: {
+      size: {
+        default: 'h-10',
+        sm: 'h-9 px-2 text-xs',
+        lg: 'h-11 px-4',
+        xl: 'h-12 px-4 text-base',
+      },
+      error: {
+        true: 'border-destructive focus-visible:ring-destructive',
+        false: '',
+      },
+    },
+    defaultVariants: {
+      size: 'default',
+      error: false,
+    },
+  }
+)
+
+export interface InputProps extends VariantProps<typeof inputVariants> {
+  id?: string
+  type?: string
+  modelValue?: string | number
+  placeholder?: string
+  disabled?: boolean
+  readonly?: boolean
+  error?: string
+  help?: string
+  maxlength?: number
+  minlength?: number
+  pattern?: string
+  required?: boolean
+  autocomplete?: string
+  clearable?: boolean
+  showCount?: boolean
+  prefixIcon?: any
+  suffixIcon?: any
+}
+
+// 组件属性
+const props = withDefaults(defineProps<InputProps>(), {
+  type: 'text',
+  modelValue: '',
+  disabled: false,
+  readonly: false,
+  clearable: false,
+  showCount: false,
+  size: 'default'
+})
+
+// 组件事件
+const emit = defineEmits<{
+  'update:modelValue': [value: string | number]
+  change: [value: string | number]
+  focus: [event: FocusEvent]
+  blur: [event: FocusEvent]
+  keydown: [event: KeyboardEvent]
+  clear: []
+}>()
+
+// 禁用继承的 class 和 style 属性
+defineOptions({
+  inheritAttrs: false
+})
+
+// 内部状态
+const focused = ref(false)
+
+// 获取插槽
+const slots = useSlots()
+
+// 计算属性
+const hasPrefix = computed(() => !!(props.prefixIcon || slots.prefix))
+const hasSuffix = computed(() => !!(props.suffixIcon || slots.suffix || props.clearable))
+const currentLength = computed(() => String(props.modelValue || '').length)
+
+// 事件处理
+const handleInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  let value: string | number = target.value
+
+  // 数字类型转换
+  if (props.type === 'number') {
+    value = target.valueAsNumber || 0
+  }
+
+  emit('update:modelValue', value)
+}
+
+const handleChange = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  let value: string | number = target.value
+
+  if (props.type === 'number') {
+    value = target.valueAsNumber || 0
+  }
+
+  emit('change', value)
+}
+
+const handleFocus = (event: FocusEvent) => {
+  focused.value = true
+  emit('focus', event)
+}
+
+const handleBlur = (event: FocusEvent) => {
+  focused.value = false
+  emit('blur', event)
+}
+
+const handleKeydown = (event: KeyboardEvent) => {
+  emit('keydown', event)
+}
+
+const handleClear = () => {
+  emit('update:modelValue', '')
+  emit('clear')
+}
+</script>
+
+<style scoped>
+/* 数字输入框隐藏默认的增减按钮 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* 文件输入框样式 */
+input[type="file"]::file-selector-button {
+  background: transparent;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+</style>
