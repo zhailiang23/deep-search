@@ -15,6 +15,10 @@ const SearchTestPage = () => import('@/views/search/SearchTest.vue')
 const LoginPage = () => import('@/views/auth/LoginPage.vue')
 const ComponentTestPage = () => import('@/views/ComponentTest.vue')
 
+// 移动端页面组件
+const MobileHomePage = () => import('@/views/mobile/MobileHome.vue')
+const MobileSearchPage = () => import('@/views/mobile/MobileSearch.vue')
+
 // 管理后台页面
 const AdminDashboard = () => import('@/views/admin/Dashboard.vue')
 const AdminSearchManagement = () => import('@/views/admin/SearchManagement.vue')
@@ -83,6 +87,51 @@ const routes: RouteRecordRaw[] = [
           title: '搜索组件测试',
           description: '搜索组件集成测试页面'
         }
+      }
+    ]
+  },
+
+  // 移动端路由
+  {
+    path: '/mobile',
+    component: EmptyLayout,
+    children: [
+      {
+        path: '',
+        name: 'MobileHome',
+        component: MobileHomePage,
+        meta: {
+          title: '移动端首页',
+          description: '智能搜索移动端首页',
+          mobile: true
+        }
+      },
+      {
+        path: 'search',
+        name: 'MobileSearch',
+        component: MobileSearchPage,
+        meta: {
+          title: '移动端搜索',
+          description: '智能搜索移动端',
+          mobile: true
+        }
+      },
+      {
+        path: 'search/results',
+        name: 'MobileSearchResults',
+        component: SearchResultsPage, // 可以复用或创建专门的移动端搜索结果页
+        meta: {
+          title: '搜索结果',
+          description: '移动端搜索结果',
+          mobile: true
+        },
+        props: route => ({
+          query: route.query.q,
+          filters: route.query.filters,
+          sort: route.query.sort,
+          page: Number(route.query.page) || 1,
+          mobile: true
+        })
       }
     ]
   },

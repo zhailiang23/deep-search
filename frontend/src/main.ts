@@ -6,6 +6,7 @@ import { setupStore } from './stores'
 
 // 全局样式
 import './styles/globals.css'
+import './styles/mobile.css'
 
 // 创建应用实例
 const app = createApp(App)
