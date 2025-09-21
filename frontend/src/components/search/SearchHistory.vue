@@ -33,7 +33,10 @@
         <div
           v-for="(item, index) in historyItems"
           :key="index"
-          class="history-item group flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+          :class="[
+            'history-item group flex items-center justify-between rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors',
+            mobileMode ? 'p-4 mobile-touch-target' : 'p-3'
+          ]"
           @click="selectHistoryItem(item)"
         >
           <div class="flex-1 min-w-0">
@@ -61,7 +64,7 @@
               variant="ghost"
               size="sm"
               @click.stop="reSearch(item)"
-              class="h-8 w-8 p-0"
+              :class="mobileMode ? 'h-10 w-10 p-0 mobile-touch-target' : 'h-8 w-8 p-0'"
               title="重新搜索"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +76,10 @@
               variant="ghost"
               size="sm"
               @click.stop="removeHistoryItem(index)"
-              class="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+              :class="[
+                'p-0 text-red-500 hover:text-red-700',
+                mobileMode ? 'h-10 w-10 mobile-touch-target' : 'h-8 w-8'
+              ]"
               title="删除"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,16 +121,18 @@ interface SearchHistoryItem {
 // 组件属性
 interface Props {
   maxItems?: number
+  mobileMode?: boolean
 }
 
 // 组件事件
 interface Emits {
-  (e: 'selectHistory', item: SearchHistoryItem): void
-  (e: 'reSearch', item: SearchHistoryItem): void
+  (e: 'history-select', query: string): void
+  (e: 're-search', item: SearchHistoryItem): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  maxItems: 10
+  maxItems: 10,
+  mobileMode: false
 })
 
 const emit = defineEmits<Emits>()
@@ -183,12 +191,12 @@ const addHistoryItem = (item: SearchHistoryItem) => {
 
 // 选择历史项
 const selectHistoryItem = (item: SearchHistoryItem) => {
-  emit('selectHistory', item)
+  emit('history-select', item.query)
 }
 
 // 重新搜索
 const reSearch = (item: SearchHistoryItem) => {
-  emit('reSearch', item)
+  emit('re-search', item)
 }
 
 // 删除历史项

@@ -6,7 +6,7 @@
         class="flex items-center border-2 border-border rounded-lg bg-background transition-all duration-200 focus-within:border-primary focus-within:shadow-md"
         :class="[
           isFocused && 'border-primary shadow-md',
-          size === 'large' ? 'h-14' : size === 'medium' ? 'h-12' : 'h-10'
+          mobileMode ? 'h-12' : size === 'large' ? 'h-14' : size === 'medium' ? 'h-12' : 'h-10'
         ]"
       >
         <!-- 搜索图标 -->
@@ -23,8 +23,9 @@
           :disabled="disabled"
           class="flex-1 px-3 py-2 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
           :class="[
-            size === 'large' ? 'text-lg' : size === 'medium' ? 'text-base' : 'text-sm'
+            mobileMode ? 'text-base' : size === 'large' ? 'text-lg' : size === 'medium' ? 'text-base' : 'text-sm'
           ]"
+          :style="mobileMode ? { fontSize: '16px' } : {}"
           @focus="handleFocus"
           @blur="handleBlur"
           @input="handleInput"
@@ -36,7 +37,10 @@
         <button
           v-if="searchQuery && !disabled"
           @click="clearSearch"
-          class="flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-foreground transition-colors"
+          :class="[
+            'flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors',
+            mobileMode ? 'w-10 h-10 mobile-touch-target' : 'w-8 h-8'
+          ]"
           type="button"
           title="清除搜索"
         >
@@ -48,7 +52,8 @@
           v-if="enableVoiceSearch && !disabled"
           @click="toggleVoiceSearch"
           :class="[
-            'flex items-center justify-center w-8 h-8 text-muted-foreground hover:text-foreground transition-colors mx-1',
+            'flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors mx-1',
+            mobileMode ? 'w-10 h-10 mobile-touch-target' : 'w-8 h-8',
             isListening && 'text-red-500 animate-pulse'
           ]"
           type="button"
@@ -62,7 +67,10 @@
         <button
           @click="handleSearch"
           :disabled="disabled || !searchQuery.trim()"
-          class="flex items-center justify-center px-4 py-2 mr-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          :class="[
+            'flex items-center justify-center mr-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+            mobileMode ? 'px-6 py-3 mobile-touch-target' : 'px-4 py-2'
+          ]"
           type="button"
         >
           <span class="text-sm font-medium">搜索</span>
@@ -182,6 +190,7 @@ interface Props {
   showRecentSearches?: boolean
   showPopularSearches?: boolean
   enableVoiceSearch?: boolean
+  mobileMode?: boolean
 
   // 搜索类型
   searchTypes?: SearchType[]
@@ -200,6 +209,7 @@ const props = withDefaults(defineProps<Props>(), {
   showRecentSearches: true,
   showPopularSearches: true,
   enableVoiceSearch: true,
+  mobileMode: false,
   searchTypes: () => [
     { value: 'all', label: '全部' },
     { value: 'products', label: '产品' },
