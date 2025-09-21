@@ -11,6 +11,7 @@ const EmptyLayout = () => import('@/layouts/EmptyLayout.vue')
 const HomePage = () => import('@/views/Home.vue')
 const SearchPage = () => import('@/views/search/SearchPage.vue')
 const SearchResultsPage = () => import('@/views/search/SearchResultsPage.vue')
+const SearchTestPage = () => import('@/views/search/SearchTest.vue')
 const LoginPage = () => import('@/views/auth/LoginPage.vue')
 const ComponentTestPage = () => import('@/views/ComponentTest.vue')
 
@@ -72,6 +73,15 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: 'UI组件测试',
           description: 'UI组件和主题测试页面'
+        }
+      },
+      {
+        path: '/search-test',
+        name: 'SearchTest',
+        component: SearchTestPage,
+        meta: {
+          title: '搜索组件测试',
+          description: '搜索组件集成测试页面'
         }
       }
     ]
@@ -267,8 +277,8 @@ router.afterEach((to, _from) => {
   // 页面加载完成后的处理
   if (typeof window !== 'undefined') {
     // 发送页面浏览统计
-    if (window.gtag) {
-      window.gtag('config', 'GA_MEASUREMENT_ID', {
+    if ((window as any).gtag) {
+      (window as any).gtag('config', 'GA_MEASUREMENT_ID', {
         page_title: to.meta.title,
         page_location: window.location.href
       })

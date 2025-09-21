@@ -6,10 +6,15 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import { useHead } from '@vueuse/head'
 import { useThemeStore } from '@/stores/theme'
 import { useAuthStore } from '@/stores/auth'
 import { useSearchStore } from '@/stores/search'
+
+// 路由
+const router = useRouter()
 
 // 使用stores
 const themeStore = useThemeStore()
